@@ -5,6 +5,7 @@ import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import github.comioko.articlepilot.constant.PromptConstant;
 import github.comioko.articlepilot.model.dto.article.ArticleState;
+import github.comioko.articlepilot.model.dto.image.ImageRequest;
 import github.comioko.articlepilot.model.enums.ImageMethodEnum;
 import github.comioko.articlepilot.model.enums.SseMessageTypeEnum;
 import github.comioko.articlepilot.utils.GsonUtils;
@@ -28,10 +29,13 @@ public class ArticleAgentService {
     private DashScopeChatModel chatModel;
 
     @Resource
-    private github.comioko.articlepilot.service.ImageSearchService imageSearchService;
+    private ImageSearchService imageSearchService;
 
     @Resource
     private CosService cosService;
+
+    @Resource
+    private ImageServiceStrategy imageServiceStrategy;
 
     /**
      * 执行完整的文章生成流程
@@ -145,19 +149,20 @@ public class ArticleAgentService {
         List<ArticleState.ImageResult> imageResults = new ArrayList<>();
 
         for (ArticleState.ImageRequirement requirement : state.getImageRequirements()) {
+            String imageSource = requirement.getImageSource();
             log.info("智能体5：开始检索配图, position={}, keywords={}",
                     requirement.getPosition(), requirement.getKeywords());
 
+            ImageRequest imageRequest = ImageRequest.builder()
+                    .keywords(requirement.getKeywords())
+                    .prompt(requirement.getPrompt())
+                    .position(requirement.getPosition())
+                    .type(requirement.getType())
+                    .build();
             // 调用图片检索服务
-            String imageUrl = imageSearchService.searchImage(requirement.getKeywords());
-
-            // 降级策略
+            ImageServiceStrategy.ImageResult result = imageServiceStrategy.getImage(imageSource, imageRequest);
+            String imageUrl = result.getUrl();
             ImageMethodEnum method = imageSearchService.getMethod();
-            if (imageUrl == null) {
-                imageUrl = imageSearchService.getFallbackImage(requirement.getPosition());
-                method = ImageMethodEnum.PICSUM;
-                log.warn("智能体5：图片检索失败, 使用降级方案, position={}", requirement.getPosition());
-            }
 
             // 使用图片直接 URL（MVP 阶段不上传到 COS，简化流程）
             String finalImageUrl = cosService.useDirectUrl(imageUrl);
