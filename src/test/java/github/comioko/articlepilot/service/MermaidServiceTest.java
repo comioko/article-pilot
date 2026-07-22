@@ -1,6 +1,5 @@
 package github.comioko.articlepilot.service;
 
-import github.comioko.articlepilot.service.MermaidService;
 import github.comioko.articlepilot.config.MermaidConfig;
 import github.comioko.articlepilot.model.dto.image.ImageRequest;
 import github.comioko.articlepilot.model.enums.ImageMethodEnum;
@@ -14,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Mermaid 图表生成服务测试
- * 
+ *
  * 注意：此测试需要安装 mermaid-cli
  * 安装命令：npm install -g @mermaid-js/mermaid-cli
  *
@@ -60,7 +59,7 @@ class MermaidServiceTest {
     void testIsAvailable() {
         // 检查 mermaid-cli 是否可用
         boolean available = mermaidService.isAvailable();
-        System.out.println("Mermaid CLI 可用性: " + available);
+        System.out.println(": Mermaid CLI 可用性" + available);
         
         if (!available) {
             System.out.println("跳过测试：未安装 mermaid-cli");

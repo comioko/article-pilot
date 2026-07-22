@@ -29,9 +29,6 @@ public class ArticleAgentService {
     private DashScopeChatModel chatModel;
 
     @Resource
-    private ImageSearchService imageSearchService;
-
-    @Resource
     private CosService cosService;
 
     @Resource
@@ -162,7 +159,7 @@ public class ArticleAgentService {
             // 调用图片检索服务
             ImageServiceStrategy.ImageResult result = imageServiceStrategy.getImage(imageSource, imageRequest);
             String imageUrl = result.getUrl();
-            ImageMethodEnum method = imageSearchService.getMethod();
+            ImageMethodEnum method = result.getMethod();
 
             // 使用图片直接 URL（MVP 阶段不上传到 COS，简化流程）
             String finalImageUrl = cosService.useDirectUrl(imageUrl);

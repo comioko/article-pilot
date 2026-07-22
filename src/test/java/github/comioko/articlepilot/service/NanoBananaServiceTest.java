@@ -40,6 +40,11 @@ class NanoBananaServiceTest {
         assertNotNull(imageServiceStrategy, "ImageServiceStrategy 未注入");
     }
 
+    private boolean isApiKeyConfigured() {
+        String key = nanoBananaConfig.getApiKey();
+        return key != null && !key.isEmpty() && !key.startsWith("your-");
+    }
+
     @Test
     void testGetMethod() {
         // 验证服务类型
@@ -70,8 +75,8 @@ class NanoBananaServiceTest {
     @Test
     void testGenerateImage() {
         // 检查是否配置了 API Key
-        if (nanoBananaConfig.getApiKey() == null || nanoBananaConfig.getApiKey().isEmpty()) {
-            System.out.println("跳过测试：未配置 Nano Banana API Key");
+        if (!isApiKeyConfigured()) {
+            System.out.println("跳过测试：未配置有效的 Nano Banana API Key");
             return;
         }
 
@@ -105,8 +110,8 @@ class NanoBananaServiceTest {
     @Test
     void testGetImageWithRequest() {
         // 检查是否配置了 API Key
-        if (nanoBananaConfig.getApiKey() == null || nanoBananaConfig.getApiKey().isEmpty()) {
-            System.out.println("跳过测试：未配置 Gemini API Key");
+        if (!isApiKeyConfigured()) {
+            System.out.println("跳过测试：未配置有效的 Gemini API Key");
             return;
         }
 
@@ -132,8 +137,8 @@ class NanoBananaServiceTest {
     @Test
     void testGetImageViaStrategy() {
         // 检查是否配置了 API Key
-        if (nanoBananaConfig.getApiKey() == null || nanoBananaConfig.getApiKey().isEmpty()) {
-            System.out.println("跳过测试：未配置 Nano Banana API Key");
+        if (!isApiKeyConfigured()) {
+            System.out.println("跳过测试：未配置有效的 Nano Banana API Key");
             return;
         }
 
