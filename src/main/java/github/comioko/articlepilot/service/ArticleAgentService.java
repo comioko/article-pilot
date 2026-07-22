@@ -157,27 +157,25 @@ public class ArticleAgentService {
                     .type(requirement.getType())
                     .build();
             // 调用图片检索服务
-            ImageServiceStrategy.ImageResult result = imageServiceStrategy.getImage(imageSource, imageRequest);
-            String imageUrl = result.getUrl();
+            // 使用策略模式获取图片并统一上传到 COS
+            ImageServiceStrategy.ImageResult result = imageServiceStrategy.getImageAndUpload(imageSource, imageRequest);
+            String cosUrl = result.getUrl();
             ImageMethodEnum method = result.getMethod();
 
-            // 使用图片直接 URL（MVP 阶段不上传到 COS，简化流程）
-            String finalImageUrl = cosService.useDirectUrl(imageUrl);
-
-            // 创建配图结果
-            ArticleState.ImageResult imageResult = buildImageResult(requirement, finalImageUrl, method);
+            // 创建配图结果（URL 已经是 COS 地址）
+            ArticleState.ImageResult imageResult = buildImageResult(requirement, cosUrl, method);
             imageResults.add(imageResult);
 
             // 推送单张配图完成
             String imageCompleteMessage = SseMessageTypeEnum.IMAGE_COMPLETE.getStreamingPrefix() + GsonUtils.toJson(imageResult);
             streamHandler.accept(imageCompleteMessage);
 
-            log.info("智能体5：配图检索成功, position={}, method={}",
-                    requirement.getPosition(), method.getValue());
+            log.info("智能体5：配图获取并上传成功, position={}, method={}, cosUrl={}",
+                    requirement.getPosition(), method.getValue(), cosUrl);
         }
 
         state.setImages(imageResults);
-        log.info("智能体5：所有配图生成完成, count={}", imageResults.size());
+        log.info("智能体5：所有配图生成并上传完成, count={}", imageResults.size());
     }
 
     /**

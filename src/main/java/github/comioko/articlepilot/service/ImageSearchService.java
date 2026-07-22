@@ -42,6 +42,8 @@ public interface ImageSearchService {
         return ImageData.fromUrl(url);
     }
 
+
+
     /**
      * 根据关键词/提示词获取图片
      *
