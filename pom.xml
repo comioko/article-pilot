@@ -130,6 +130,13 @@
             <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
             <version>1.1.0.0-RC2</version>
         </dependency>
+        <!-- Google Gen AI Java SDK (Nano Banana 图片生成) -->
+        <dependency>
+            <groupId>com.google.genai</groupId>
+            <artifactId>google-genai</artifactId>
+            <version>1.35.0</version>
+        </dependency>
+
 
     </dependencies>
 
