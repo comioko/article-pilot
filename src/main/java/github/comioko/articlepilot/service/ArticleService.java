@@ -9,6 +9,8 @@ import github.comioko.articlepilot.model.entity.User;
 import github.comioko.articlepilot.model.enums.ArticleStatusEnum;
 import github.comioko.articlepilot.model.vo.ArticleVO;
 
+import java.util.List;
+
 /**
  * 文章服务接口
  *
@@ -25,7 +27,7 @@ public interface ArticleService extends IService<Article> {
      * @param loginUser 当前登录用户
      * @return 任务ID
      */
-    String createArticleTask(String topic, User loginUser);
+    String createArticleTask(String topic, String style, User loginUser);
 
     /**
      * 创建文章任务（带配额检查）
@@ -37,7 +39,7 @@ public interface ArticleService extends IService<Article> {
      * @param loginUser 当前登录用户
      * @return 任务ID
      */
-//    String createArticleTaskWithQuotaCheck(String topic, String style, List<String> enabledImageMethods, User loginUser);
+    String createArticleTaskWithQuotaCheck(String topic, String style, List<String> enabledImageMethods, User loginUser);
 
     /**
      * 根据任务ID获取文章

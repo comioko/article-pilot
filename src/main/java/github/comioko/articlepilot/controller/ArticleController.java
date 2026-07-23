@@ -11,6 +11,7 @@ import github.comioko.articlepilot.manager.SseEmitterManager;
 import github.comioko.articlepilot.model.dto.article.ArticleCreateRequest;
 import github.comioko.articlepilot.model.dto.article.ArticleQueryRequest;
 import github.comioko.articlepilot.model.entity.User;
+import github.comioko.articlepilot.model.enums.ArticleStyleEnum;
 import github.comioko.articlepilot.model.vo.ArticleVO;
 import github.comioko.articlepilot.service.ArticleAsyncService;
 import github.comioko.articlepilot.service.ArticleService;
@@ -50,14 +51,20 @@ public class ArticleController {
         ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
         ThrowUtils.throwIf(request.getTopic() == null || request.getTopic().trim().isEmpty(),
                 ErrorCode.PARAMS_ERROR, "选题不能为空");
-
+        // 校验风格参数（允许为空）
+        ThrowUtils.throwIf(!ArticleStyleEnum.isValid(request.getStyle()),
+                ErrorCode.PARAMS_ERROR, "无效的文章风格");
         User loginUser = userService.getLoginUser(httpServletRequest);
 
-        // 创建文章任务
-        String taskId = articleService.createArticleTask(request.getTopic(), loginUser);
+        String taskId = articleService.createArticleTaskWithQuotaCheck(request.getTopic(), request.getStyle(), loginUser);
 
-        // 异步执行文章生成
-        articleAsyncService.executeArticleGeneration(taskId, request.getTopic());
+        // 异步执行文章生成（传递风格和配图方式选择）
+        articleAsyncService.executeArticleGeneration(
+                taskId,
+                request.getTopic(),
+                request.getStyle(),
+                request.getEnabledImageMethods()
+        );
 
         return ResultUtils.success(taskId);
     }
