@@ -9,8 +9,6 @@ import github.comioko.articlepilot.model.entity.User;
 import github.comioko.articlepilot.model.enums.ArticleStatusEnum;
 import github.comioko.articlepilot.model.vo.ArticleVO;
 
-import java.util.List;
-
 /**
  * 文章服务接口
  *
@@ -35,11 +33,10 @@ public interface ArticleService extends IService<Article> {
      *
      * @param topic     选题
      * @param style     文章风格（可为空）
-     * @param enabledImageMethods 允许的配图方式列表（可为空）
      * @param loginUser 当前登录用户
      * @return 任务ID
      */
-    String createArticleTaskWithQuotaCheck(String topic, String style, List<String> enabledImageMethods, User loginUser);
+    String createArticleTaskWithQuotaCheck(String topic, String style, User loginUser);
 
     /**
      * 根据任务ID获取文章
