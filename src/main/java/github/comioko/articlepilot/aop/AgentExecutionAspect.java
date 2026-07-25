@@ -28,11 +28,13 @@ import java.util.Map;
 public class AgentExecutionAspect {
 
 
+    //pjp是被拦截方法上下文
     @Around("@annotation(agentExecution)")
     public Object aroundAgentExecution(ProceedingJoinPoint pjp, AgentExecution agentExecution) throws Throwable {
+        //记录开始时间
         long startTime = System.currentTimeMillis();
         LocalDateTime startDateTime = LocalDateTime.now();
-        
+
         // 提取 taskId 和输入数据
         String taskId = extractTaskId(pjp);
         String inputData = extractInputData(pjp);
@@ -63,6 +65,7 @@ public class AgentExecutionAspect {
      * 从方法参数中提取 taskId
      */
     private String extractTaskId(ProceedingJoinPoint pjp) {
+        //获取被拦截方法的所有参数
         Object[] args = pjp.getArgs();
         if (args == null || args.length == 0) {
             return "unknown";
@@ -70,6 +73,7 @@ public class AgentExecutionAspect {
 
         // 优先从 ArticleState 中获取
         for (Object arg : args) {
+            //判断某个参数是不是 ArticleState 类型
             if (arg instanceof ArticleState) {
                 return ((ArticleState) arg).getTaskId();
             }
@@ -96,7 +100,9 @@ public class AgentExecutionAspect {
             }
 
             Map<String, Object> inputMap = new HashMap<>();
+            //pjp.getSignature() 可以拿到当前被拦截方法的信息。方法名，参数名，返回值类型，method对象
             MethodSignature signature = (MethodSignature) pjp.getSignature();
+            //获取参数名
             String[] paramNames = signature.getParameterNames();
 
             for (int i = 0; i < args.length && i < paramNames.length; i++) {

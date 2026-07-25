@@ -11,7 +11,9 @@ import github.comioko.articlepilot.manager.SseEmitterManager;
 import github.comioko.articlepilot.model.dto.article.*;
 import github.comioko.articlepilot.model.entity.User;
 import github.comioko.articlepilot.model.enums.ArticleStyleEnum;
+import github.comioko.articlepilot.model.vo.AgentExecutionStats;
 import github.comioko.articlepilot.model.vo.ArticleVO;
+import github.comioko.articlepilot.service.AgentLogService;
 import github.comioko.articlepilot.service.ArticleAsyncService;
 import github.comioko.articlepilot.service.ArticleService;
 import github.comioko.articlepilot.service.UserService;
@@ -42,6 +44,9 @@ public class ArticleController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private AgentLogService agentLogService;
 
     /**
      * 创建文章任务
@@ -227,4 +232,15 @@ public class ArticleController {
         return ResultUtils.success(modifiedOutline);
     }
 
+    /**
+     * 获取任务执行日志
+     */@GetMapping("/execution-logs/{taskId}")
+    @Operation(summary = "获取任务执行日志")
+    public BaseResponse<AgentExecutionStats> getExecutionLogs(@PathVariable String taskId) {
+        ThrowUtils.throwIf(taskId == null || taskId.trim().isEmpty(),
+                ErrorCode.PARAMS_ERROR, "任务ID不能为空");
+
+        AgentExecutionStats stats = agentLogService.getExecutionStats(taskId);
+        return ResultUtils.success(stats);
+    }
 }

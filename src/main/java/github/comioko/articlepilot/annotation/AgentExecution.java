@@ -9,6 +9,7 @@ import java.lang.annotation.*;
  * @author <a href="https://codefather.cn">编程导航学习圈</a>
  */
 @Target(ElementType.METHOD)
+//确保注解在运行时可读，aop切面才能拿到它。
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface AgentExecution {
