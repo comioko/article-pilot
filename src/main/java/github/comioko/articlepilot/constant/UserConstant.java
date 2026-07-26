@@ -36,7 +36,7 @@ public interface UserConstant {
     /**
      * 普通用户默认配额
      */
-    int DEFAULT_QUOTA = 5;
+    int DEFAULT_QUOTA = 50;
 
     // endregion
 }
