@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * 注意：此测试会实际调用 Gemini API，请确保配置了有效的 API Key
  *
- * @author <a href="https://codefather.cn">编程导航学习圈</a>
+ * @author comioko
  */
 @SpringBootTest
 @ActiveProfiles("local")

@@ -29,7 +29,7 @@ import static github.comioko.articlepilot.constant.UserConstant.USER_LOGIN_STATE
 /**
  * 用户 服务层实现。
  *
- * @author <a href="https://codefather.cn">编程导航学习圈</a>
+ * @author comioko
  */
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
