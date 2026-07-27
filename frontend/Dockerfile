@@ -14,7 +14,7 @@ COPY package*.json ./
 # 构建阶段需要所有依赖（包括 devDependencies）
 RUN npm ci && \
     npm cache clean --force && \
-    npm rebuild rollup --verbose
+    npm install --no-save --force @rollup/rollup-linux-x64-gnu || true
 
 # 2. 复制源代码
 COPY . .
