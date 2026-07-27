@@ -52,9 +52,8 @@ jobs:
       - name: Build frontend
         working-directory: frontend
         run: |
-          npm ci --no-audit
-          npm rebuild rollup
-          npm install --no-save --include=optional sass@^1.77.0
+          npm ci --no-audit --include=optional
+          npm rebuild rollup --verbose
           npm run build
 
   publish:
