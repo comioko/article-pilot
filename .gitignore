@@ -3,7 +3,18 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-*.yml
+
+# Local secrets and machine-specific configuration
+.env
+.env.*
+!.env.example
+src/main/resources/application-local.yml
+src/main/resources/application-local.yaml
+
+# macOS
+.DS_Store
+**/.DS_Store
+
 ### STS ###
 .apt_generated
 .classpath

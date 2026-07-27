@@ -19,6 +19,8 @@ public class MermaidConfig {
      */
     private String cliCommand = "mmdc";
 
+    private String puppeteerConfig;
+
     /**
      * 背景颜色（transparent 为透明背景）
      */

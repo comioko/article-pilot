@@ -123,6 +123,11 @@ public class MermaidService implements ImageSearchService {
                 cmdLine += " -w " + mermaidConfig.getWidth();
             }
 
+            if (mermaidConfig.getPuppeteerConfig() != null
+                    && !mermaidConfig.getPuppeteerConfig().isBlank()) {
+                cmdLine += " -p " + mermaidConfig.getPuppeteerConfig();
+            }
+
             log.info("执行 Mermaid CLI 命令: {}", cmdLine);
 
             // 执行命令（带超时）

@@ -130,6 +130,14 @@
             <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
             <version>1.1.0.0-RC2</version>
         </dependency>
+
+        <!-- Spring AI Alibaba Agent Framework -->
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-agent-framework</artifactId>
+            <version>1.1.0.0-RC2</version>
+        </dependency>
+
         <!-- Google Gen AI Java SDK (Nano Banana 图片生成) -->
         <dependency>
             <groupId>com.google.genai</groupId>
@@ -149,6 +157,13 @@
             <groupId>com.stripe</groupId>
             <artifactId>stripe-java</artifactId>
             <version>31.2.0</version>
+        </dependency>
+
+        <!-- Spring AI Alibaba Agent Framework -->
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-agent-framework</artifactId>
+            <version>1.1.0.0-RC2</version>
         </dependency>
 
         <!-- Spring AI Alibaba Agent Framework -->

@@ -1,0 +1,141 @@
+name: CI and Deploy
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: article-pilot-production
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate application
+    runs-on: ubuntu-latest
+    outputs:
+      image_prefix: ${{ steps.image_prefix.outputs.value }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set image prefix
+        id: image_prefix
+        shell: bash
+        run: echo "value=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/article-pilot" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Compile backend
+        run: ./mvnw -B -ntp -DskipTests verify
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+  publish:
+    name: Publish ${{ matrix.name }} image
+    if: github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: backend
+            context: .
+            dockerfile: ./Dockerfile
+          - name: frontend
+            context: ./frontend
+            dockerfile: ./frontend/Dockerfile
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Sign in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ needs.validate.outputs.image_prefix }}-${{ matrix.name }}:sha-${{ github.sha }}
+            ${{ needs.validate.outputs.image_prefix }}-${{ matrix.name }}:latest
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  deploy:
+    name: Deploy production
+    if: github.event_name != 'pull_request'
+    needs:
+      - validate
+      - publish
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Upload deployment files
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: compose.prod.yml,deploy/Caddyfile,deploy/.env.example,deploy/mysql/01-schema.sql
+          target: /opt/article-pilot
+          overwrite: true
+
+      - name: Pull images and restart services
+        uses: appleboy/ssh-action@v1
+        env:
+          IMAGE_TAG: sha-${{ github.sha }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: IMAGE_TAG
+          script: |
+            set -eu
+            cd /opt/article-pilot
+            test -f .env
+            IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml config --quiet
+            IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml pull backend frontend
+            IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml up -d --remove-orphans --wait --wait-timeout 240
+            IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml ps
+            docker image prune -f
