@@ -92,8 +92,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ needs.validate.outputs.image_prefix }}-${{ matrix.name }}:sha-${{ github.sha }}
-            ${{ needs.validate.outputs.image_prefix }}-${{ matrix.name }}:latest
+            ${{ needs.validate.outputs.image_prefix }}:${{ matrix.name }}-sha-${{ github.sha }}
+            ${{ needs.validate.outputs.image_prefix }}:${{ matrix.name }}-latest
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
 
