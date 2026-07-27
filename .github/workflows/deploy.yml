@@ -53,7 +53,8 @@ jobs:
         working-directory: frontend
         run: |
           npm ci --no-audit
-          npm install --no-save --include=optional @rollup/rollup-linux-x64-gnu
+          npm install --no-save --include=optional @rollup/rollup-linux-x64-gnu sass@^1.77.0
+          rm -rf node_modules/sass-embedded
           npm run build
 
   publish:
