@@ -53,8 +53,8 @@ jobs:
         working-directory: frontend
         run: |
           npm ci --no-audit
-          npm install --no-save --include=optional @rollup/rollup-linux-x64-gnu sass@^1.77.0
-          rm -rf node_modules/sass-embedded
+          npm rebuild rollup
+          npm install --no-save --include=optional sass@^1.77.0
           npm run build
 
   publish:
@@ -99,7 +99,7 @@ jobs:
             ${{ needs.validate.outputs.image_prefix }}:${{ matrix.name }}-sha-${{ github.sha }}
             ${{ needs.validate.outputs.image_prefix }}:${{ matrix.name }}-latest
           cache-from: type=gha,scope=${{ matrix.name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=min,scope=${{ matrix.name }}
 
   deploy:
     name: Deploy production
