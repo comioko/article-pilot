@@ -124,7 +124,7 @@ jobs:
           target: /opt/article-pilot
           overwrite: true
 
-      - name: Pull images and restart services
+      - name: Pre-pull backend image
         uses: appleboy/ssh-action@v1
         timeout: 60m
         env:
@@ -134,14 +134,34 @@ jobs:
           port: ${{ secrets.DEPLOY_PORT }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          command_timeout: 50m
+          command_timeout: 55m
           envs: IMAGE_TAG
           script: |
             set -eu
             cd /opt/article-pilot
             test -f .env
             IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml config --quiet
-            IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml pull backend frontend
+            IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml pull backend
+            echo "backend-pull-ok"
+
+      - name: Start stack with backend image
+        uses: appleboy/ssh-action@v1
+        timeout: 30m
+        env:
+          IMAGE_TAG: sha-${{ github.sha }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 25m
+          envs: IMAGE_TAG
+          script: |
+            set -eu
+            cd /opt/article-pilot
+            test -f .env
+            IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml pull frontend
             IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml up -d --remove-orphans --wait --wait-timeout 900
             IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml ps
             docker image prune -f
+            echo "deploy-ok"
