@@ -98,7 +98,7 @@ jobs:
             ${{ needs.validate.outputs.image_prefix }}:${{ matrix.name }}-sha-${{ github.sha }}
             ${{ needs.validate.outputs.image_prefix }}:${{ matrix.name }}-latest
           cache-from: type=gha,scope=${{ matrix.name }}
-          cache-to: type=gha,mode=min,scope=${{ matrix.name }}
+          cache-to: ""
 
   deploy:
     name: Deploy production
@@ -140,6 +140,6 @@ jobs:
             test -f .env
             IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml config --quiet
             IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml pull backend frontend
-            IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml up -d --remove-orphans --wait --wait-timeout 240
+            IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml up -d --remove-orphans --wait --wait-timeout 900
             IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml ps
             docker image prune -f

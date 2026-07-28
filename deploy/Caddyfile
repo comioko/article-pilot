@@ -1,4 +1,9 @@
-{$SITE_ADDRESS} {
+{
+    auto_https off
+    admin off
+}
+
+:80 {
     encode zstd gzip
 
     header {

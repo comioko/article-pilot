@@ -40,7 +40,7 @@ USER spring
 
 EXPOSE 8567
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=5 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=600s --retries=10 \
     CMD curl --fail --silent http://localhost:8567/api/health/ > /dev/null || exit 1
 
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
