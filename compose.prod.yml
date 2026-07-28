@@ -17,7 +17,7 @@ services:
       - mysql_data:/var/lib/mysql
       - ./deploy/mysql/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "mysql -uroot -p\"$$MYSQL_ROOT_PASSWORD\" -e 'SELECT 1'"]
+      test: ["CMD-SHELL", "(echo > /dev/tcp/127.0.0.1/3306) 2>/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 15
