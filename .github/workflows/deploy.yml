@@ -126,6 +126,7 @@ jobs:
 
       - name: Pull images and restart services
         uses: appleboy/ssh-action@v1
+        timeout: 60m
         env:
           IMAGE_TAG: sha-${{ github.sha }}
         with:
@@ -133,6 +134,7 @@ jobs:
           port: ${{ secrets.DEPLOY_PORT }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 50m
           envs: IMAGE_TAG
           script: |
             set -eu
