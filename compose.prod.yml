@@ -17,11 +17,11 @@ services:
       - mysql_data:/var/lib/mysql
       - ./deploy/mysql/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root --password=\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
+      test: ["CMD-SHELL", "mysql -uroot -p\"$$MYSQL_ROOT_PASSWORD\" -e 'SELECT 1'"]
       interval: 10s
       timeout: 5s
       retries: 15
-      start_period: 30s
+      start_period: 90s
     networks:
       - app
 
