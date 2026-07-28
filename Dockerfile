@@ -11,21 +11,13 @@ RUN mvn -B -ntp -DskipTests clean package && \
 
 FROM eclipse-temurin:21-jre-alpine
 
-ENV PUPPETEER_SKIP_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
-    MERMAID_PUPPETEER_CONFIG=/app/puppeteer-config.json
+# MermaidService resolves its chromium binary from this file when set.
+# The image intentionally does NOT install chromium or mermaid-cli to keep
+# the runtime image small; MermaidService has a fallback path when the
+# config is empty or the binary is missing.
+ENV MERMAID_PUPPETEER_CONFIG=/app/puppeteer-config.json
 
-RUN apk add --no-cache \
-        chromium \
-        curl \
-        font-noto-cjk \
-        freetype \
-        harfbuzz \
-        nodejs \
-        npm \
-        nss && \
-    npm install --global @mermaid-js/mermaid-cli@11.12.0 && \
-    npm cache clean --force && \
+RUN apk add --no-cache curl && \
     addgroup --system spring && \
     adduser --system --ingroup spring spring
 
