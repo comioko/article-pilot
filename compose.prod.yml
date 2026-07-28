@@ -6,6 +6,7 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
+      MYSQL_PWD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME:-ArticlePilot}
       MYSQL_USER: ${DB_USERNAME:-articlepilot}
       MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
@@ -17,7 +18,7 @@ services:
       - mysql_data:/var/lib/mysql
       - ./deploy/mysql/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "(echo > /dev/tcp/127.0.0.1/3306) 2>/dev/null || exit 1"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root 2>&1 | grep -q 'mysqld is alive' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 15
