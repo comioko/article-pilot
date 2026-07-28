@@ -126,7 +126,7 @@ jobs:
 
       - name: Pre-pull backend image
         uses: appleboy/ssh-action@v1
-        timeout: 60m
+        timeout-minutes: 60
         env:
           IMAGE_TAG: sha-${{ github.sha }}
         with:
@@ -146,7 +146,7 @@ jobs:
 
       - name: Start stack with backend image
         uses: appleboy/ssh-action@v1
-        timeout: 30m
+        timeout-minutes: 30
         env:
           IMAGE_TAG: sha-${{ github.sha }}
         with:
