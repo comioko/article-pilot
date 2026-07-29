@@ -321,10 +321,11 @@ public class ArticleAgentService {
      * 解析 JSON 响应
      */
     private <T> T parseJsonResponse(String content, Class<T> clazz, String name) {
+        String cleaned = stripMarkdownFence(content);
         try {
-            return GsonUtils.fromJson(content, clazz);
+            return GsonUtils.fromJson(cleaned, clazz);
         } catch (JsonSyntaxException e) {
-            log.error("{}解析失败, content={}", name, content, e);
+            log.error("{}解析失败, content={}", name, cleaned, e);
             throw new RuntimeException(name + "解析失败");
         }
     }
@@ -333,12 +334,37 @@ public class ArticleAgentService {
      * 解析 JSON 列表响应
      */
     private <T> T parseJsonListResponse(String content, TypeToken<T> typeToken, String name) {
+        String cleaned = stripMarkdownFence(content);
         try {
-            return GsonUtils.fromJson(content, typeToken);
+            return GsonUtils.fromJson(cleaned, typeToken);
         } catch (JsonSyntaxException e) {
-            log.error("{}解析失败, content={}", name, content, e);
+            log.error("{}解析失败, content={}", name, cleaned, e);
             throw new RuntimeException(name + "解析失败");
         }
+    }
+
+    /**
+     * 剥离 LLM 输出中常见的 ```json ... ``` markdown 围栏。
+     * 如果内容没有围栏，则原样返回。
+     */
+    private String stripMarkdownFence(String content) {
+        if (content == null) {
+            return null;
+        }
+        String trimmed = content.trim();
+        int firstFence = trimmed.indexOf("```");
+        if (firstFence < 0) {
+            return trimmed;
+        }
+        int openLineEnd = trimmed.indexOf('\n', firstFence);
+        if (openLineEnd > 0) {
+            trimmed = trimmed.substring(openLineEnd + 1);
+        }
+        int lastFence = trimmed.lastIndexOf("```");
+        if (lastFence > 0) {
+            trimmed = trimmed.substring(0, lastFence);
+        }
+        return trimmed.trim();
     }
 
     /**
