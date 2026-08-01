@@ -1,76 +1,121 @@
 /**
- * CSS 变量定义 - 清新绿色配色方案
+ * CSS 变量定义 - 暖咖啡色调（Brewitty 风格）
+ * 主色：咖啡棕 / 焦糖 / 深棕
+ * 背景：奶白 / 奶茶 / 沙奶茶
+ * 强调：橙色
+ * 字体：Outfit（标题）+ Work Sans（正文）+ Caveat（手写 eyebrow）
  */
 
-/* 引入 Google Fonts - Geometric Modern */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Work+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Work+Sans:wght@300;400;500;600;700&family=Caveat:wght@400;500;600&display=swap');
 
 :root {
-  /* 品牌色 - 绿色系 */
-  --color-primary: #22C55E;
-  --color-primary-light: #4ADE80;
-  --color-primary-dark: #16A34A;
-  --color-secondary: #0F172A;
-  --color-secondary-light: #334155;
+  /* ========== 品牌色 · 咖啡 ========== */
+  --color-primary: #8B6F47;          /* 咖啡棕 · 主 */
+  --color-primary-light: #B89968;    /* 焦糖 */
+  --color-primary-dark: #5C4830;     /* 深棕 · 标题重点 */
+  --color-accent: #E07B3A;           /* 橙色强调 */
+  --color-accent-warm: #C8632A;      /* 深橙 · hover */
+  --color-mocha: #6B4F33;            /* 摩卡 */
+  --color-caramel: #D4A574;          /* 浅焦糖 */
 
-  /* 功能色 */
-  --color-cta: #22C55E;
-  --color-success: #22C55E;
-  --color-warning: #EAB308;
-  --color-error: #EF4444;
-  --color-info: #3B82F6;
+  /* 兼容旧变量名 */
+  --color-secondary: #3E2A1F;
+  --color-secondary-light: #5C4830;
 
-  /* 中性色 */
-  --color-background: #FFFFFF;
-  --color-background-secondary: #F8FAFC;
-  --color-background-tertiary: #F1F5F9;
-  --color-background-dark: #0F172A;
-  --color-text: #0F172A;
-  --color-text-secondary: #475569;
-  --color-text-muted: #94A3B8;
-  --color-border: #E2E8F0;
-  --color-border-light: #F1F5F9;
+  /* ========== 功能色 ========== */
+  --color-cta: #E07B3A;              /* CTA 用橙色 */
+  --color-success: #6B7F5C;
+  --color-warning: #D4A574;
+  --color-error: #B07263;
+  --color-info: #7A8E99;
 
-  /* 渐变 */
-  --gradient-primary: linear-gradient(135deg, #22C55E 0%, #16A34A 100%);
-  --gradient-hero: linear-gradient(180deg, #DCFCE7 0%, #FFFFFF 100%);
-  --gradient-hero-dark: linear-gradient(180deg, #166534 0%, #14532D 100%);
+  /* ========== 中性背景 · 奶白米白 ========== */
+  --color-background: #FBF6EE;       /* 暖奶白 · 主背景 */
+  --color-background-secondary: #F4E9D5;  /* 奶茶 */
+  --color-background-tertiary: #E8D5B7;   /* 沙奶茶 */
+  --color-background-elevated: #FFFCF7;   /* 卡片底色 · 更白 */
+  --color-background-dark: #3E2A1F;      /* 深棕块 */
 
-  /* 纯色背景 */
-  --bg-primary: #22C55E;
-  --bg-primary-hover: #16A34A;
-  --bg-dark: #0F172A;
-  --bg-dark-hover: #1E293B;
-  --bg-success: #22C55E;
+  /* ========== 文字 · 暖灰棕 ========== */
+  --color-text: #3E2A1F;             /* 主文字 */
+  --color-text-secondary: #6B5B4D;   /* 暖灰文字 */
+  --color-text-muted: #9A8B7B;       /* 浅暖灰 */
+  --color-text-on-dark: #F4E9D5;     /* 深底白字 */
 
-  /* 阴影 */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-card-hover: 0 8px 24px rgba(34, 197, 94, 0.15);
-  --shadow-green: 0 4px 14px rgba(34, 197, 94, 0.25);
+  --color-border: #E8D9C2;           /* 暖沙描边 */
+  --color-border-light: #F0E5CE;
+  --color-border-soft: #DCC9A8;
 
-  /* 圆角 */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 24px;
+  /* ========== 渐变 ========== */
+  --gradient-primary: linear-gradient(135deg, #8B6F47 0%, #5C4830 100%);
+  --gradient-accent: linear-gradient(135deg, #E07B3A 0%, #C8632A 100%);
+  --gradient-hero: linear-gradient(180deg, #F4E9D5 0%, #FBF6EE 100%);
+  --gradient-hero-dark: linear-gradient(180deg, #5C4830 0%, #3E2A1F 100%);
+  --gradient-cream: linear-gradient(180deg, #FBF6EE 0%, #F4E9D5 100%);
+  --gradient-coffee: linear-gradient(135deg, #8B6F47 0%, #B89968 100%);
+
+  /* ========== 纯色背景 ========== */
+  --bg-primary: #8B6F47;
+  --bg-primary-hover: #5C4830;
+  --bg-accent: #E07B3A;
+  --bg-accent-hover: #C8632A;
+  --bg-dark: #3E2A1F;
+  --bg-dark-hover: #5C4830;
+  --bg-success: #6B7F5C;
+
+  /* ========== 阴影 · 暖色调 ========== */
+  --shadow-xs: 0 1px 2px rgba(62, 42, 31, 0.04);
+  --shadow-sm: 0 2px 8px rgba(62, 42, 31, 0.05), 0 1px 2px rgba(62, 42, 31, 0.03);
+  --shadow-md: 0 8px 24px rgba(62, 42, 31, 0.08), 0 2px 6px rgba(62, 42, 31, 0.04);
+  --shadow-lg: 0 20px 50px rgba(62, 42, 31, 0.10), 0 6px 16px rgba(62, 42, 31, 0.05);
+  --shadow-xl: 0 30px 70px rgba(62, 42, 31, 0.12), 0 10px 30px rgba(62, 42, 31, 0.06);
+  --shadow-card: 0 2px 16px rgba(62, 42, 31, 0.05);
+  --shadow-card-hover: 0 16px 40px rgba(62, 42, 31, 0.10);
+  --shadow-green: 0 6px 20px rgba(139, 111, 71, 0.25);  /* 保留名 · 实际为暖棕 */
+  --shadow-accent: 0 8px 24px rgba(224, 123, 58, 0.30);
+  --shadow-coffee: 0 6px 20px rgba(139, 111, 71, 0.22);
+
+  /* ========== 圆角 ========== */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
+  --radius-2xl: 40px;
+  --radius-pill: 999px;
   --radius-full: 9999px;
+  --radius-arch: 56px 56px 0 0;
 
-  /* 过渡 */
-  --transition-fast: 150ms ease-out;
-  --transition-normal: 200ms ease-out;
-  --transition-slow: 300ms ease-out;
+  /* ========== 过渡 ========== */
+  --transition-fast: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 600ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-soft: 500ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  --transition-bounce: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* 毛玻璃 */
-  --glass-bg: rgba(255, 255, 255, 0.9);
-  --glass-bg-green: rgba(220, 252, 231, 0.8);
-  --glass-blur: blur(12px);
+  /* ========== 毛玻璃 ========== */
+  --glass-bg: rgba(251, 246, 238, 0.78);
+  --glass-bg-warm: rgba(244, 233, 213, 0.70);
+  --glass-bg-dark: rgba(62, 42, 31, 0.55);
+  --glass-bg-scrolled: rgba(251, 246, 238, 0.92);
+  --glass-blur: blur(20px) saturate(140%);
+  --glass-blur-light: blur(14px);
 
-  /* 响应式断点（用于 JS 读取） */
+  /* ========== 排版 ========== */
+  --font-display: 'Outfit', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+  --font-body: 'Work Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-handwritten: 'Caveat', 'Brush Script MT', cursive;
+
+  --letter-spacing-wide: 0.18em;
+  --letter-spacing-base: 0.01em;
+  --letter-spacing-tight: -0.01em;
+
+  /* ========== 容器 ========== */
+  --container-narrow: 880px;
+  --container-base: 1100px;
+  --container-wide: 1280px;
+
+  /* ========== 响应式断点（用于 JS 读取） ========== */
   --breakpoint-sm: 640px;
   --breakpoint-md: 768px;
   --breakpoint-lg: 992px;

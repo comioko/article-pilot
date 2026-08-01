@@ -1,39 +1,89 @@
 /**
- * 公共样式类
+ * 公共样式类 - 暖咖啡色调（Brewitty 风格）
+ * + 微交互（按钮白光扫过、卡片 hover 抬升）
  */
 
 /* ==================== 按钮样式 ==================== */
 
-/* 渐变主按钮 */
+/* 主按钮（橙色渐变）- 微位移 + 白光扫过 */
 .btn-primary-gradient {
-  height: 44px;
-  padding: 0 24px;
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: var(--radius-lg);
-  background: var(--gradient-primary) !important;
+  position: relative;
+  overflow: hidden;
+  height: 50px;
+  padding: 0 30px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  border-radius: var(--radius-pill) !important;
+  background: var(--gradient-accent) !important;
   border: none !important;
   color: white !important;
-  box-shadow: var(--shadow-green) !important;
-  transition: opacity var(--transition-normal) !important;
+  box-shadow: var(--shadow-accent) !important;
+  transition: all var(--transition-normal) !important;
+  cursor: pointer;
+}
+
+.btn-primary-gradient::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.45), transparent);
+  transition: left 700ms cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .btn-primary-gradient:hover,
 .btn-primary-gradient:focus,
 .btn-primary-gradient:active {
-  background: var(--gradient-primary) !important;
+  background: var(--gradient-accent) !important;
   border: none !important;
   color: white !important;
-  box-shadow: var(--shadow-green) !important;
-  opacity: 0.92;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(224, 123, 58, 0.36) !important;
+}
+
+.btn-primary-gradient:hover::after,
+.btn-primary-gradient:focus::after {
+  left: 130%;
 }
 
 .btn-primary-gradient:disabled,
 .btn-primary-gradient.ant-btn-disabled {
-  background: var(--color-border) !important;
+  background: var(--color-background-tertiary) !important;
   box-shadow: none !important;
   opacity: 0.6;
   color: var(--color-text-muted) !important;
+  transform: none !important;
+}
+
+.btn-primary-gradient:disabled::after {
+  display: none;
+}
+
+/* 次按钮（描边胶囊） */
+.btn-outline {
+  height: 50px;
+  padding: 0 30px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  border-radius: var(--radius-pill) !important;
+  background: transparent !important;
+  border: 1px solid var(--color-border-soft) !important;
+  color: var(--color-text) !important;
+  box-shadow: none !important;
+  transition: all var(--transition-normal) !important;
+  cursor: pointer;
+}
+
+.btn-outline:hover,
+.btn-outline:focus {
+  background: var(--color-background-secondary) !important;
+  border-color: var(--color-caramel) !important;
+  color: var(--color-text) !important;
+  transform: translateY(-2px);
 }
 
 /* 隐藏波纹效果 */
@@ -44,65 +94,74 @@
 /* ==================== 空状态样式 ==================== */
 
 .empty-state {
-  padding: 60px 20px;
+  padding: 80px 20px;
   text-align: center;
 }
 
 .empty-state .empty-icon {
-  font-size: 48px;
-  color: var(--color-text-muted);
-  margin-bottom: 16px;
+  font-size: 44px;
+  color: var(--color-caramel);
+  margin-bottom: 20px;
 }
 
 .empty-state .empty-title {
-  font-size: 16px;
+  font-family: var(--font-display);
+  font-size: 22px;
   font-weight: 600;
   color: var(--color-text);
   margin: 0 0 8px;
+  letter-spacing: -0.01em;
 }
 
 .empty-state .empty-desc {
   font-size: 14px;
-  color: var(--color-text-muted);
-  margin: 0 0 20px;
+  color: var(--color-text-secondary);
+  margin: 0 0 24px;
+  line-height: 1.6;
 }
 
 /* ==================== 页面头部样式 ==================== */
 
 .page-header {
   background: var(--gradient-hero);
-  padding: 32px 20px;
-  margin-bottom: 24px;
+  padding: 80px 24px;
+  margin-bottom: 32px;
+  position: relative;
+  overflow: hidden;
 }
 
 .page-header .header-container {
-  max-width: 1200px;
+  max-width: var(--container-base);
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
+  z-index: 2;
 }
 
 .page-header .page-title {
-  font-size: 28px;
-  font-weight: 700;
-  margin: 0 0 6px;
-  letter-spacing: -0.5px;
+  font-family: var(--font-display);
+  font-size: 42px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
   color: var(--color-text);
 }
 
 .page-header .page-subtitle {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--color-text-secondary);
   margin: 0;
+  letter-spacing: 0.02em;
 }
 
 /* ==================== 容器样式 ==================== */
 
 .container {
-  max-width: 1200px;
+  max-width: var(--container-base);
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 24px;
 }
 
 /* ==================== 表格样式 ==================== */
@@ -110,7 +169,8 @@
 .table-card {
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
-  box-shadow: none;
+  background: var(--color-background-elevated);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 
@@ -125,8 +185,8 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
-  padding: 16px 20px;
-  background: white;
+  padding: 18px 22px;
+  background: var(--color-background-elevated);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
 }
@@ -134,48 +194,165 @@
 /* ==================== Markdown 内容样式 ==================== */
 
 .markdown-content {
-  line-height: 1.8;
-  font-size: 15px;
+  line-height: 1.85;
+  font-size: 16px;
   color: var(--color-text);
+  font-family: var(--font-body);
 }
 
 .markdown-content h2 {
-  font-size: 20px;
+  font-family: var(--font-display);
+  font-size: 26px;
   font-weight: 600;
-  margin: 28px 0 14px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--color-border);
+  margin: 40px 0 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border-light);
   color: var(--color-text);
+  letter-spacing: -0.01em;
 }
 
 .markdown-content h3 {
-  font-size: 17px;
+  font-family: var(--font-display);
+  font-size: 21px;
   font-weight: 600;
-  margin: 22px 0 10px;
+  margin: 32px 0 14px;
   color: var(--color-text);
 }
 
 .markdown-content p {
-  margin-bottom: 14px;
+  margin-bottom: 18px;
   text-indent: 2em;
   color: var(--color-text);
+  line-height: 1.85;
 }
 
 .markdown-content ul,
 .markdown-content ol {
-  margin-bottom: 14px;
+  margin-bottom: 18px;
   padding-left: 2em;
 }
 
 .markdown-content li {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   color: var(--color-text);
+  line-height: 1.85;
 }
 
 .markdown-content img {
   display: block;
   max-width: 100%;
-  margin: 20px auto;
-  border-radius: var(--radius-md);
+  margin: 28px auto;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
+}
+
+/* ==================== 状态徽章 ==================== */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  background: var(--color-background-secondary);
+  color: var(--color-text-secondary);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+}
+
+.status-badge.status-completed {
+  background: rgba(107, 127, 92, 0.16);
+  color: #4F5E42;
+}
+.status-badge.status-completed .status-dot {
+  background: #6B7F5C;
+}
+
+.status-badge.status-processing {
+  background: rgba(212, 165, 116, 0.22);
+  color: var(--color-primary-dark);
+}
+.status-badge.status-processing .status-dot {
+  background: var(--color-caramel);
+  animation: pulse 1.5s infinite;
+}
+
+.status-badge.status-pending {
+  background: var(--color-background-secondary);
+  color: var(--color-text-secondary);
+}
+.status-badge.status-pending .status-dot {
+  background: var(--color-text-muted);
+}
+
+.status-badge.status-failed {
+  background: rgba(176, 114, 99, 0.18);
+  color: #8C5A4E;
+}
+.status-badge.status-failed .status-dot {
+  background: var(--color-error);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ==================== 卡片通用 ==================== */
+
+.card-soft {
+  background: var(--color-background-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  transition: all var(--transition-normal);
+}
+
+.card-soft:hover {
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-3px);
+  border-color: var(--color-border-soft);
+}
+
+/* ==================== Eyebrow 标签 ==================== */
+
+.eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-accent-warm);
+  padding: 6px 16px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-pill);
+  background: rgba(224, 123, 58, 0.08);
+}
+
+.eyebrow-handwritten {
+  font-family: var(--font-handwritten);
+  font-size: 32px;
+  font-weight: 500;
+  color: var(--color-accent);
+  line-height: 1;
+  display: inline-block;
+  transform: rotate(-2deg);
+}
+
+/* ==================== 手写装饰字 ==================== */
+
+.script-text {
+  font-family: var(--font-handwritten);
+  font-size: 28px;
+  color: var(--color-accent);
+  font-weight: 500;
+  line-height: 1;
 }

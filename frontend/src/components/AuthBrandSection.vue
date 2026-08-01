@@ -1,24 +1,28 @@
 <template>
   <div class="brand-section">
-    <div class="brand-bg"></div>
+    <div class="brand-bg">
+      <div class="brand-leaf brand-leaf-1"></div>
+      <div class="brand-leaf brand-leaf-2"></div>
+      <div class="brand-leaf brand-leaf-3"></div>
+    </div>
     <div class="brand-content">
       <div class="brand-logo">
         <img src="@/assets/logo.png" alt="Logo" class="logo-img" />
       </div>
-      <h1 class="brand-title">AI 爆款文章创作器</h1>
-      <p class="brand-subtitle">让每个人都能写出 10万+ 文章</p>
+      <h1 class="brand-title">ArticlePilot</h1>
+      <p class="brand-subtitle">AI 文章创作助手</p>
       <div class="brand-features">
         <div class="feature-item">
           <CheckCircleOutlined class="feature-check" />
-          <span>智能生成标题与大纲</span>
+          <span>灵感化的标题与大纲</span>
         </div>
         <div class="feature-item">
           <CheckCircleOutlined class="feature-check" />
-          <span>流式生成高质量正文</span>
+          <span>流式书写高质量正文</span>
         </div>
         <div class="feature-item">
           <CheckCircleOutlined class="feature-check" />
-          <span>自动配图一键导出</span>
+          <span>自然配图 一键导出</span>
         </div>
       </div>
     </div>
@@ -32,78 +36,99 @@ import { CheckCircleOutlined } from '@ant-design/icons-vue'
 <style scoped>
 .brand-section {
   flex: 1;
-  padding: 48px 40px;
+  padding: 56px 48px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
+  background: linear-gradient(160deg, #E8D5B7 0%, #F4E9D5 50%, #FBF6EE 100%);
 }
 
 .brand-bg {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #22C55E 0%, #16A34A 50%, #15803D 100%);
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
 }
 
-.brand-bg::before {
-  content: '';
+.brand-leaf {
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
-  animation: pulse-bg 8s ease-in-out infinite;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.7;
 }
 
-@keyframes pulse-bg {
-  0%, 100% { transform: scale(1); opacity: 0.5; }
-  50% { transform: scale(1.1); opacity: 0.3; }
+.brand-leaf-1 {
+  width: 360px;
+  height: 360px;
+  top: -100px;
+  right: -100px;
+  background: radial-gradient(circle, rgba(212, 165, 116, 0.55) 0%, transparent 70%);
+}
+
+.brand-leaf-2 {
+  width: 280px;
+  height: 280px;
+  bottom: -80px;
+  left: -60px;
+  background: radial-gradient(circle, rgba(184, 153, 104, 0.40) 0%, transparent 70%);
+}
+
+.brand-leaf-3 {
+  width: 200px;
+  height: 200px;
+  top: 40%;
+  left: 30%;
+  background: radial-gradient(circle, rgba(244, 233, 213, 0.65) 0%, transparent 70%);
 }
 
 .brand-content {
   position: relative;
   z-index: 1;
   text-align: center;
-  color: white;
+  color: var(--color-text);
+  max-width: 360px;
 }
 
 .brand-logo {
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 }
 
 .logo-img {
-  width: 80px;
-  height: 80px;
-  object-fit: contain;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: var(--radius-xl);
-  padding: 8px;
+  width: 76px;
+  height: 76px;
+  object-fit: cover;
+  background: rgba(255, 252, 247, 0.95);
+  border-radius: 50%;
+  padding: 5px;
+  box-shadow: var(--shadow-md);
 }
 
 .brand-title {
-  font-size: 26px;
-  font-weight: 700;
-  margin: 0 0 10px;
-  letter-spacing: -0.5px;
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 600;
+  margin: 0 0 14px;
+  letter-spacing: -0.005em;
+  color: var(--color-text);
 }
 
 .brand-subtitle {
   font-size: 15px;
-  opacity: 0.9;
-  margin: 0 0 36px;
+  color: var(--color-text-secondary);
+  margin: 0 0 40px;
+  line-height: 1.7;
+  letter-spacing: 0.02em;
 }
 
 .brand-features {
   text-align: left;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 252, 247, 0.55);
+  border: 1px solid var(--color-border-light);
   border-radius: var(--radius-lg);
-  padding: 20px 24px;
-  backdrop-filter: blur(8px);
+  padding: 24px 26px;
+  backdrop-filter: var(--glass-blur-light);
 }
 
 .feature-item {
@@ -112,6 +137,8 @@ import { CheckCircleOutlined } from '@ant-design/icons-vue'
   gap: 12px;
   margin-bottom: 14px;
   font-size: 14px;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.02em;
 }
 
 .feature-item:last-child {
@@ -119,20 +146,17 @@ import { CheckCircleOutlined } from '@ant-design/icons-vue'
 }
 
 .feature-check {
-  font-size: 18px;
-  color: white;
+  font-size: 16px;
+  color: var(--color-accent);
 }
 
-/* 响应式 */
 @media (max-width: 768px) {
   .brand-section {
-    padding: 32px 24px;
+    padding: 40px 28px;
   }
-
   .brand-title {
-    font-size: 22px;
+    font-size: 28px;
   }
-
   .brand-features {
     display: none;
   }

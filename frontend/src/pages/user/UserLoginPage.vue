@@ -8,8 +8,8 @@
           <div class="brand-logo">
             <img src="@/assets/logo.png" alt="Logo" class="logo-img" />
           </div>
-          <h1 class="brand-title">AI 爆款文章创作器</h1>
-          <p class="brand-subtitle">让每个人都能写出 10万+ 文章</p>
+          <h1 class="brand-title">ArticlePilot</h1>
+          <p class="brand-subtitle">AI 文章创作助手</p>
           <div class="brand-features">
             <div class="feature-item">
               <CheckCircleOutlined class="feature-check" />
@@ -139,81 +139,72 @@ const handleSubmit = async (values: any) => {
   box-shadow: var(--shadow-xl);
 }
 
-/* 左侧品牌区域 */
+/* 左侧品牌区域 - 暖咖啡色调 */
 .brand-section {
   flex: 1;
-  padding: 48px 40px;
+  padding: 56px 48px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
+  background: linear-gradient(160deg, #E8D5B7 0%, #F4E9D5 50%, #FBF6EE 100%);
 }
 
 .brand-bg {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #22C55E 0%, #16A34A 50%, #15803D 100%);
-}
-
-.brand-bg::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
-  animation: pulse-bg 8s ease-in-out infinite;
-}
-
-@keyframes pulse-bg {
-  0%, 100% { transform: scale(1); opacity: 0.5; }
-  50% { transform: scale(1.1); opacity: 0.3; }
+  inset: 0;
+  background: radial-gradient(circle at 80% 20%, rgba(212, 165, 116, 0.45) 0%, transparent 60%),
+              radial-gradient(circle at 20% 80%, rgba(184, 153, 104, 0.40) 0%, transparent 60%),
+              radial-gradient(circle at 50% 50%, rgba(244, 233, 213, 0.55) 0%, transparent 70%);
 }
 
 .brand-content {
   position: relative;
   z-index: 1;
   text-align: center;
-  color: white;
+  color: var(--color-text);
+  max-width: 360px;
 }
 
 .brand-logo {
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 }
 
 .logo-img {
-  width: 80px;
-  height: 80px;
-  object-fit: contain;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: var(--radius-xl);
-  padding: 8px;
+  width: 76px;
+  height: 76px;
+  object-fit: cover;
+  background: rgba(255, 252, 247, 0.95);
+  border-radius: 50%;
+  padding: 5px;
+  box-shadow: var(--shadow-md);
 }
 
 .brand-title {
-  font-size: 26px;
-  font-weight: 700;
-  margin: 0 0 10px;
-  letter-spacing: -0.5px;
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 600;
+  margin: 0 0 14px;
+  letter-spacing: -0.005em;
+  color: var(--color-text);
 }
 
 .brand-subtitle {
   font-size: 15px;
-  opacity: 0.9;
-  margin: 0 0 36px;
+  color: var(--color-text-secondary);
+  margin: 0 0 40px;
+  line-height: 1.7;
+  letter-spacing: 0.02em;
 }
 
 .brand-features {
   text-align: left;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 252, 247, 0.55);
+  border: 1px solid var(--color-border-light);
   border-radius: var(--radius-lg);
-  padding: 20px 24px;
-  backdrop-filter: blur(8px);
+  padding: 24px 26px;
+  backdrop-filter: var(--glass-blur-light);
 }
 
 .feature-item {
@@ -222,6 +213,8 @@ const handleSubmit = async (values: any) => {
   gap: 12px;
   margin-bottom: 14px;
   font-size: 14px;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.02em;
 }
 
 .feature-item:last-child {
@@ -229,8 +222,8 @@ const handleSubmit = async (values: any) => {
 }
 
 .feature-check {
-  font-size: 18px;
-  color: white;
+  font-size: 16px;
+  color: var(--color-accent);
 }
 
 /* 右侧表单区域 */

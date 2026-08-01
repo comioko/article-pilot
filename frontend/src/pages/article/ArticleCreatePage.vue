@@ -997,15 +997,13 @@ onBeforeUnmount(() => {
 
 <style scoped lang="scss">
 .article-create-page {
-  height: calc(100vh - 64px);
+  min-height: calc(100vh - 76px);
   background: var(--color-background-secondary);
-  overflow: hidden;
 }
 
 .create-layout {
   display: grid;
   grid-template-columns: 320px 1fr 300px;
-  height: 100%;
 }
 
 /* 左侧边栏 */
@@ -1015,7 +1013,6 @@ onBeforeUnmount(() => {
   padding: 24px;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
 }
 
 .sidebar-header {
@@ -1148,11 +1145,11 @@ onBeforeUnmount(() => {
 }
 
 
-/* 主内容区 */
+/* 主内容区 - 不再单独滚动，让创作框随页面整体滚动 */
 .main-content {
   padding: 32px 40px;
-  overflow-y: auto;
   background: white;
+  min-height: calc(100vh - 76px);
 }
 
 /* 输入状态 */
@@ -1564,7 +1561,6 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  overflow-y: auto;
 }
 
 .panel-section {
@@ -1969,20 +1965,21 @@ onBeforeUnmount(() => {
   }
 }
 
-/* 阶段切换过渡动画 */
+/* 阶段切换过渡动画 - 增强 */
 .fade-slide-enter-active,
 .fade-slide-leave-active {
-  transition: all 0.3s ease;
+  transition: opacity 500ms cubic-bezier(0.25, 0.1, 0.25, 1),
+              transform 500ms cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .fade-slide-enter-from {
   opacity: 0;
-  transform: translateX(30px);
+  transform: translateY(24px) scale(0.985);
 }
 
 .fade-slide-leave-to {
   opacity: 0;
-  transform: translateX(-30px);
+  transform: translateY(-24px) scale(0.985);
 }
 
 /* 动画 */
@@ -1994,6 +1991,20 @@ onBeforeUnmount(() => {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* 流程指示器 - 当前步骤脉冲发光 */
+.flow-indicator .active & {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(224, 123, 58, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(224, 123, 58, 0);
+  }
 }
 
 @keyframes pulse {
