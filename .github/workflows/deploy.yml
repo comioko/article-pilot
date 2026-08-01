@@ -167,7 +167,7 @@ jobs:
             echo "deploy-ok"
       - name: Cleanup old image shas on server
         uses: appleboy/ssh-action@v1
-        timeout: 10m
+        timeout-minutes: 10
         env:
           IMAGE_TAG: sha-${{ github.sha }}
         with:
