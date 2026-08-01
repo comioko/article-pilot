@@ -1,0 +1,2 @@
+# 每天凌晨 3 点清理 article-pilot 旧镜像，保留 1 个 sha
+0 3 * * * root cd /opt/article-pilot && IMAGE_TAG=$(docker compose ps -q backend | xargs -I{} docker inspect --format '{{.Config.Image}}' {} 2>/dev/null | sed 's/.*://') KEEP_COUNT=1 bash /opt/article-pilot/deploy/scripts/cleanup-images.sh >> /var/log/article-pilot-cleanup.log 2>&1

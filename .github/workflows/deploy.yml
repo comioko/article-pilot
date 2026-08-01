@@ -163,5 +163,21 @@ jobs:
             IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml pull frontend
             IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml up -d --remove-orphans --wait --wait-timeout 900
             IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml ps
-            docker image prune -f
+            docker image prune -af
             echo "deploy-ok"
+      - name: Cleanup old image shas on server
+        uses: appleboy/ssh-action@v1
+        timeout: 10m
+        env:
+          IMAGE_TAG: sha-${{ github.sha }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 9m
+          envs: IMAGE_TAG
+          script: |
+            set -eu
+            cd /opt/article-pilot
+            IMAGE_TAG="$IMAGE_TAG" KEEP_COUNT=1 bash deploy/scripts/cleanup-images.sh
