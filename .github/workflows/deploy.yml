@@ -120,7 +120,7 @@ jobs:
           port: ${{ secrets.DEPLOY_PORT }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: compose.prod.yml,deploy/Caddyfile,deploy/.env.example,deploy/mysql/01-schema.sql
+          source: compose.prod.yml,deploy/Caddyfile,deploy/.env.example,deploy/mysql/01-schema.sql,deploy/scripts/cleanup-images.sh
           target: /opt/article-pilot
           overwrite: true
 
