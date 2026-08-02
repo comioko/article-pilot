@@ -125,3 +125,44 @@ export async function updateUser(body: API.UserUpdateRequest, options?: { [key: 
     ...(options || {}),
   })
 }
+
+/** 当前用户修改个人资料 PUT /user/profile */
+export async function updateMyProfile(
+  body: API.UserProfileUpdateRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseLoginUserVO>('/user/profile', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** 上传头像到 COS POST /user/avatar（multipart） */
+export async function uploadAvatar(file: File, options?: { [key: string]: any }) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request<API.BaseResponseMapStringString>('/user/avatar', {
+    method: 'POST',
+    data: formData,
+    ...(options || {}),
+  })
+}
+
+/** 当前用户修改密码 PUT /user/password */
+export async function changePassword(
+  body: API.PasswordChangeRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseBoolean>('/user/password', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}

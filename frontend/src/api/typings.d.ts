@@ -344,4 +344,21 @@ declare namespace API {
     userRole?: string
     createTime?: string
   }
+
+  type UserProfileUpdateRequest = {
+    userName?: string
+    userProfile?: string
+    userAvatar?: string
+  }
+
+  type PasswordChangeRequest = {
+    oldPassword?: string
+    newPassword?: string
+  }
+
+  type BaseResponseMapStringString = {
+    code?: number
+    data?: Record<string, string>
+    message?: string
+  }
 }

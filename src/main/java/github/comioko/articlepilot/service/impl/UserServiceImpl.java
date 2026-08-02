@@ -13,10 +13,13 @@ import github.comioko.articlepilot.model.entity.User;
 import github.comioko.articlepilot.model.enums.UserRoleEnum;
 import github.comioko.articlepilot.model.vo.LoginUserVO;
 import github.comioko.articlepilot.model.vo.UserVO;
+import github.comioko.articlepilot.service.CosService;
 import github.comioko.articlepilot.service.UserService;
+import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -33,6 +36,9 @@ import static github.comioko.articlepilot.constant.UserConstant.USER_LOGIN_STATE
  */
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
+
+    @Resource
+    private CosService cosService;
 
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword) {
@@ -185,5 +191,75 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 盐值，混淆密码
         final String SALT = "comioko";
         return DigestUtils.md5DigestAsHex((userPassword + SALT).getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Override
+    public LoginUserVO updateMyProfile(User currentUser, String userName, String userProfile, String userAvatar) {
+        if (currentUser == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        // 仅在传入非 null/非空字符串时更新对应字段，避免前端传 undefined 把已有值清掉
+        if (StrUtil.isNotBlank(userName)) {
+            currentUser.setUserName(userName);
+        }
+        if (userProfile != null) {
+            currentUser.setUserProfile(userProfile);
+        }
+        if (StrUtil.isNotBlank(userAvatar)) {
+            currentUser.setUserAvatar(userAvatar);
+        }
+        boolean ok = this.updateById(currentUser);
+        if (!ok) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "更新资料失败");
+        }
+        return this.getLoginUserVO(currentUser);
+    }
+
+    @Override
+    public String uploadAvatar(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "头像文件为空");
+        }
+        try {
+            byte[] bytes = file.getBytes();
+            String contentType = file.getContentType();
+            if (contentType == null || contentType.isEmpty()) {
+                contentType = "image/png";
+            }
+            String url = cosService.uploadBytes(bytes, contentType, "avatar");
+            if (url == null || url.isEmpty()) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "头像上传失败");
+            }
+            return url;
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "头像上传失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public boolean changePassword(User currentUser, String oldPassword, String newPassword) {
+        if (currentUser == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        if (StrUtil.hasBlank(oldPassword, newPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "原密码或新密码不能为空");
+        }
+        if (newPassword.length() < 8) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "新密码长度不能少于 8 位");
+        }
+        // 校验原密码
+        String oldEncrypt = getEncryptPassword(oldPassword);
+        if (!oldEncrypt.equals(currentUser.getUserPassword())) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "原密码错误");
+        }
+        if (oldEncrypt.equals(getEncryptPassword(newPassword))) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "新密码不能与原密码相同");
+        }
+        currentUser.setUserPassword(getEncryptPassword(newPassword));
+        boolean ok = this.updateById(currentUser);
+        if (!ok) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "密码更新失败");
+        }
+        return true;
     }
 }

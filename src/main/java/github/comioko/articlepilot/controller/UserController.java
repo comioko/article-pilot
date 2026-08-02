@@ -17,9 +17,13 @@ import github.comioko.articlepilot.model.vo.UserVO;
 import github.comioko.articlepilot.service.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 用户控制层
@@ -171,5 +175,51 @@ public class UserController {
         List<UserVO> userVOList = userService.getUserVOList(userPage.getRecords());
         userVOPage.setRecords(userVOList);
         return ResultUtils.success(userVOPage);
+    }
+
+    /**
+     * 当前用户修改个人资料（昵称 / 简介 / 头像 URL）
+     */
+    @PutMapping("/profile")
+    public BaseResponse<LoginUserVO> updateMyProfile(
+            @RequestBody UserProfileUpdateRequest request,
+            HttpServletRequest httpServletRequest) {
+        User currentUser = userService.getLoginUser(httpServletRequest);
+        LoginUserVO vo = userService.updateMyProfile(
+                currentUser,
+                request.getUserName(),
+                request.getUserProfile(),
+                request.getUserAvatar());
+        return ResultUtils.success(vo);
+    }
+
+    /**
+     * 上传头像到 COS，返回访问 URL
+     */
+    @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public BaseResponse<Map<String, String>> uploadAvatar(
+            @RequestPart("file") MultipartFile file,
+            HttpServletRequest httpServletRequest) {
+        // 校验登录态
+        userService.getLoginUser(httpServletRequest);
+        String url = userService.uploadAvatar(file);
+        Map<String, String> data = new HashMap<>();
+        data.put("url", url);
+        return ResultUtils.success(data);
+    }
+
+    /**
+     * 当前用户修改密码
+     */
+    @PutMapping("/password")
+    public BaseResponse<Boolean> changePassword(
+            @RequestBody PasswordChangeRequest request,
+            HttpServletRequest httpServletRequest) {
+        User currentUser = userService.getLoginUser(httpServletRequest);
+        boolean ok = userService.changePassword(
+                currentUser,
+                request.getOldPassword(),
+                request.getNewPassword());
+        return ResultUtils.success(ok);
     }
 }

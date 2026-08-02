@@ -47,6 +47,10 @@
             </a-space>
             <template #overlay>
               <a-menu class="dropdown-menu">
+                <a-menu-item key="center" @click="router.push('/user/center')">
+                  <UserOutlined />
+                  <span>用户中心</span>
+                </a-menu-item>
                 <a-menu-item v-if="isVip" key="vip-info" class="vip-info-item" @click="router.push('/vip')">
                   <CrownOutlined />
                   <span>永久会员权益</span>
@@ -82,7 +86,8 @@ import {
   UnorderedListOutlined,
   SettingOutlined,
   CrownOutlined,
-  BarChartOutlined
+  BarChartOutlined,
+  UserOutlined
 } from '@ant-design/icons-vue'
 import { isVip as checkIsVip } from '@/utils/permission'
 

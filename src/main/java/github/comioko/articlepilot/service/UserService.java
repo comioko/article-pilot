@@ -77,6 +77,35 @@ public interface UserService extends IService<User> {
     boolean userLogout(HttpServletRequest request);
 
     /**
+     * 当前用户修改个人资料
+     *
+     * @param currentUser 当前登录用户
+     * @param userName    昵称（可空）
+     * @param userProfile 简介（可空）
+     * @param userAvatar  头像 URL（可空）
+     * @return 更新后的脱敏用户信息
+     */
+    LoginUserVO updateMyProfile(User currentUser, String userName, String userProfile, String userAvatar);
+
+    /**
+     * 上传头像到 COS，返回访问 URL
+     *
+     * @param file 头像文件
+     * @return COS 访问 URL
+     */
+    String uploadAvatar(org.springframework.web.multipart.MultipartFile file);
+
+    /**
+     * 当前用户修改密码（校验原密码）
+     *
+     * @param currentUser 当前登录用户
+     * @param oldPassword 原密码
+     * @param newPassword 新密码
+     * @return 是否成功
+     */
+    boolean changePassword(User currentUser, String oldPassword, String newPassword);
+
+    /**
      * 根据查询条件构造数据查询参数
      *
      * @param userQueryRequest
