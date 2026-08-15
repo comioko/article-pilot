@@ -81,3 +81,6 @@ article:
     orchestrator:
       enabled: ${ARTICLE_AGENT_ENABLED:true}
     max-iterations: ${ARTICLE_AGENT_MAX_ITERATIONS:3}
+    critique:
+      enabled: ${ARTICLE_AGENT_CRITIQUE_ENABLED:true}
+      threshold: ${ARTICLE_AGENT_CRITIQUE_THRESHOLD:7}

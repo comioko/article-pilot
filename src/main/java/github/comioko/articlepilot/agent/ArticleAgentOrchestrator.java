@@ -1,12 +1,15 @@
 package github.comioko.articlepilot.agent;
 
 import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
+import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import github.comioko.articlepilot.agent.agents.*;
 import github.comioko.articlepilot.agent.config.AgentConfig;
 import github.comioko.articlepilot.agent.context.StreamHandlerContext;
 import github.comioko.articlepilot.agent.parallel.ParallelImageGenerator;
+import github.comioko.articlepilot.agent.routing.CritiqueRouting;
 import github.comioko.articlepilot.model.dto.article.ArticleState;
 import github.comioko.articlepilot.model.enums.SseMessageTypeEnum;
 import github.comioko.articlepilot.utils.GsonUtils;
@@ -52,6 +55,12 @@ public class ArticleAgentOrchestrator {
     @Resource
     private ContentMergerAgent contentMergerAgent;
 
+    @Resource
+    private ContentCriticAgent contentCriticAgent;
+
+    @Resource
+    private CritiqueRouting critiqueRouting;
+
     // region 状态键常量
 
     private static final String KEY_TASK_ID = "taskId";
@@ -68,6 +77,12 @@ public class ArticleAgentOrchestrator {
     private static final String KEY_IMAGES = "images";
     private static final String KEY_FULL_CONTENT = "fullContent";
     private static final String KEY_ENABLED_IMAGE_METHODS = "enabledImageMethods";
+
+    // Self-Critique Loop 控制键
+    private static final String KEY_CRITIQUE_SCORE = "critiqueScore";
+    private static final String KEY_CRITIQUE_FEEDBACK = "critiqueFeedback";
+    private static final String KEY_REVISION_COUNT = "revisionCount";
+    private static final String KEY_REVISE = "revise";
 
     // endregion
 
@@ -301,9 +316,12 @@ public class ArticleAgentOrchestrator {
     }
 
     /**
-     * 构建阶段3图：正文+配图生成
+     * 构建阶段3图：正文+配图生成（含 Self-Critique Loop）
      * <p>
-     * 流程：content_generator → image_analyzer → parallel_image_generator → content_merger
+     * 流程：content_generator ⇄ content_critic (conditional edge) → image_analyzer → parallel_image_generator → content_merger
+     * <p>
+     * conditional edge 规则：critiqueScore &lt; threshold AND revisionCount &lt; maxIterations → revise(回到 content_generator)，
+     * 否则 accept（继续到 image_analyzer）。
      */
     private StateGraph buildPhase3Graph() throws GraphStateException {
         KeyStrategyFactory keyStrategyFactory = createKeyStrategyFactory();
@@ -311,12 +329,22 @@ public class ArticleAgentOrchestrator {
         return new StateGraph(keyStrategyFactory)
                 // 节点定义
                 .addNode("content_generator", node_async(contentGeneratorAgent))
+                .addNode("content_critic", node_async(contentCriticAgent))
                 .addNode("image_analyzer", node_async(imageAnalyzerAgent))
                 .addNode("parallel_image_generator", node_async(parallelImageGenerator))
                 .addNode("content_merger", node_async(contentMergerAgent))
-                // 边定义：顺序执行
+                // 边定义
                 .addEdge(START, "content_generator")
-                .addEdge("content_generator", "image_analyzer")
+                .addEdge("content_generator", "content_critic")
+                // 条件路由：critic 决定 revise / accept
+                .addConditionalEdges(
+                        "content_critic",
+                        AsyncCommandAction.of(AsyncEdgeAction.edge_async(critiqueRouting::route)),
+                        Map.of(
+                                "revise", "content_generator",
+                                "accept", "image_analyzer"
+                        )
+                )
                 .addEdge("image_analyzer", "parallel_image_generator")
                 .addEdge("parallel_image_generator", "content_merger")
                 .addEdge("content_merger", END);
@@ -343,6 +371,11 @@ public class ArticleAgentOrchestrator {
             strategies.put(KEY_IMAGES, new ReplaceStrategy());
             strategies.put(KEY_FULL_CONTENT, new ReplaceStrategy());
             strategies.put(KEY_ENABLED_IMAGE_METHODS, new ReplaceStrategy());
+            // Self-Critique 控制键
+            strategies.put(KEY_CRITIQUE_SCORE, new ReplaceStrategy());
+            strategies.put(KEY_CRITIQUE_FEEDBACK, new ReplaceStrategy());
+            strategies.put(KEY_REVISION_COUNT, new ReplaceStrategy());
+            strategies.put(KEY_REVISE, new ReplaceStrategy());
             return strategies;
         };
     }

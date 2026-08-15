@@ -16,6 +16,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -39,17 +40,44 @@ public class ContentGeneratorAgent implements NodeAction {
     public Map<String, Object> apply(OverAllState state) throws Exception {
         ArticleContext ctx = contextFactory.fromOverAllState(state);
 
-        log.info("ContentGeneratorAgent 开始执行: mainTitle={}", ctx.templateVars().get("{mainTitle}"));
+        // Self-Critique Loop：revisionCount > 0 表示本节点是 critic 之后的修订
+        int revisionCount = state.value("revisionCount").map(v -> ((Number) v).intValue()).orElse(0);
+        boolean revise = revisionCount > 0;
+        String feedback = state.value("critiqueFeedback").map(Object::toString).orElse("");
 
-        String prompt = ctx.render(PromptConstant.AGENT3_CONTENT_PROMPT) + ctx.styleSuffix();
+        String template;
+        if (revise) {
+            // 修订模式：注入 {critiqueFeedback} 到模板
+            Map<String, String> vars = new LinkedHashMap<>(ctx.templateVars());
+            vars.put("{critiqueFeedback}", feedback == null ? "" : feedback);
+            ArticleContext reviseCtx = new ArticleContext(
+                    ctx.taskId(), ctx.topic(), ctx.userDescription(), ctx.style(),
+                    ctx.styleFragment(), ctx.enabledImageMethods(),
+                    ctx.availableMethodsDescription(), ctx.methodUsageGuide(),
+                    ctx.lengthBudget(), vars
+            );
+            template = reviseCtx.render(PromptConstant.AGENT3_REVISION_PROMPT);
+            log.info("ContentGeneratorAgent 开始执行 [REVISE #{}]: mainTitle={}, feedback={}",
+                    revisionCount, ctx.templateVars().get("{mainTitle}"), truncate(feedback, 60));
+        } else {
+            template = ctx.render(PromptConstant.AGENT3_CONTENT_PROMPT) + ctx.styleSuffix();
+            log.info("ContentGeneratorAgent 开始执行 [INITIAL]: mainTitle={}", ctx.templateVars().get("{mainTitle}"));
+        }
+
+        String prompt = template;
 
         Consumer<String> streamHandler = StreamHandlerContext.get();
         String content = callLlmWithStreaming(prompt, streamHandler);
 
-        log.info("ContentGeneratorAgent 执行完成: 正文长度={}", content.length());
+        log.info("ContentGeneratorAgent 执行完成: 正文长度={}, revise={}", content.length(), revise);
 
         // 注：返回 String（Markdown 正文），下游用 Object::toString 兼容
         return Map.of(OUTPUT_CONTENT, content);
+    }
+
+    private static String truncate(String s, int max) {
+        if (s == null) return "";
+        return s.length() <= max ? s : s.substring(0, max) + "...";
     }
 
     /**

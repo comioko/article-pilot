@@ -23,6 +23,18 @@ public class AgentConfig {
     private int maxIterations;
 
     /**
+     * 是否启用 Self-Critique 反思循环
+     */
+    @Value("${article.agent.critique.enabled:true}")
+    private boolean critiqueEnabled;
+
+    /**
+     * Self-Critique 评分阈值：评分 &lt; 阈值触发修订
+     */
+    @Value("${article.agent.critique.threshold:7}")
+    private int critiqueThreshold;
+
+    /**
      * 提供内存状态保存器（单例）
      * 用于 Agent 对话记忆管理
      */
