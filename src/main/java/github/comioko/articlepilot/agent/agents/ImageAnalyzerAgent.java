@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.stereotype.Component;
@@ -73,7 +74,15 @@ public class ImageAnalyzerAgent implements NodeAction {
         log.info("ImageAnalyzerAgent 开始执行 [mainTitle={}, enabledMethods={}]",
                 ctx.templateVars().get("{mainTitle}"), ctx.enabledImageMethods());
 
-        String prompt = ctx.render(PromptConstant.AGENT4_TOOL_USE_PROMPT);
+        // Editor-in-Chief 反馈：使用 IMAGE_REVISION_PROMPT 重选配图
+        String imageFeedback = state.value("imageFeedback").map(Object::toString).orElse("");
+        String prompt;
+        if (!imageFeedback.isBlank()) {
+            log.info("ImageAnalyzerAgent 收到主编反馈: {}", truncate(imageFeedback, 80));
+            prompt = buildRevisionPrompt(ctx, imageFeedback);
+        } else {
+            prompt = ctx.render(PromptConstant.AGENT4_TOOL_USE_PROMPT);
+        }
 
         ArticleState.Agent4Result result = null;
         if (agentConfig.isToolRoutingEnabled()) {
@@ -85,7 +94,11 @@ public class ImageAnalyzerAgent implements NodeAction {
             }
         }
         if (result == null) {
-            result = invokeWithFallbackPrompt(ctx);
+            // 主编反馈走 JSON 文本路径（用 IMAGE_REVISION_PROMPT），
+            // 初始走老 JSON prompt 路径
+            result = !imageFeedback.isBlank()
+                    ? invokeRevisionPrompt(ctx, imageFeedback)
+                    : invokeWithFallbackPrompt(ctx);
         }
 
         if (result == null || result.getContentWithPlaceholders() == null) {
@@ -265,6 +278,37 @@ public class ImageAnalyzerAgent implements NodeAction {
             }
         }
         return reqs;
+    }
+
+    /**
+     * 主编反馈路径：构造修订 prompt（注入 imageFeedback 到模板）
+     */
+    private String buildRevisionPrompt(ArticleContext ctx, String feedback) {
+        Map<String, String> vars = new java.util.LinkedHashMap<>(ctx.templateVars());
+        vars.put("{imageFeedback}", feedback);
+        ArticleContext reviseCtx = new ArticleContext(
+                ctx.taskId(), ctx.topic(), ctx.userDescription(), ctx.style(),
+                ctx.styleFragment(), ctx.enabledImageMethods(),
+                ctx.availableMethodsDescription(), ctx.methodUsageGuide(),
+                ctx.lengthBudget(), vars
+        );
+        return reviseCtx.render(PromptConstant.IMAGE_REVISION_PROMPT);
+    }
+
+    /**
+     * 主编反馈降级路径：直接调 chatModel.call() 用 IMAGE_REVISION_PROMPT
+     */
+    private ArticleState.Agent4Result invokeRevisionPrompt(ArticleContext ctx, String feedback) {
+        String prompt = buildRevisionPrompt(ctx, feedback);
+        String response = chatModel.call(
+                new Prompt(new org.springframework.ai.chat.messages.UserMessage(prompt))
+        ).getResult().getOutput().getText();
+        return parseAgent4Result(response);
+    }
+
+    private static String truncate(String s, int max) {
+        if (s == null) return "";
+        return s.length() <= max ? s : s.substring(0, max) + "...";
     }
 
     private ArticleState.Agent4Result parseAgent4Result(String raw) {

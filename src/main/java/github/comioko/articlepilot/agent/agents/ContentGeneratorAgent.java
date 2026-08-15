@@ -42,37 +42,59 @@ public class ContentGeneratorAgent implements NodeAction {
 
         // Self-Critique Loop：revisionCount > 0 表示本节点是 critic 之后的修订
         int revisionCount = state.value("revisionCount").map(v -> ((Number) v).intValue()).orElse(0);
-        boolean revise = revisionCount > 0;
-        String feedback = state.value("critiqueFeedback").map(Object::toString).orElse("");
+
+        // Editor-in-Chief Loop：contentFeedback 非空表示主编决定 revise_content
+        String editorFeedback = state.value("contentFeedback").map(Object::toString).orElse("");
+        String criticFeedback = state.value("critiqueFeedback").map(Object::toString).orElse("");
 
         String template;
-        if (revise) {
-            // 修订模式：注入 {critiqueFeedback} 到模板
-            Map<String, String> vars = new LinkedHashMap<>(ctx.templateVars());
-            vars.put("{critiqueFeedback}", feedback == null ? "" : feedback);
+        String mode;
+        if (!editorFeedback.isBlank()) {
+            // 主编反馈（结构性，宏观）
+            template = buildRevisePrompt(ctx, editorFeedback, "EDITOR");
+            mode = "EDITOR_REVISE";
+        } else if (revisionCount > 0) {
+            // Critic 反馈（细节、打分）
+            template = buildRevisePrompt(ctx, criticFeedback, "CRITIC");
+            mode = "CRITIC_REVISE #" + revisionCount;
+        } else {
+            template = ctx.render(PromptConstant.AGENT3_CONTENT_PROMPT) + ctx.styleSuffix();
+            mode = "INITIAL";
+        }
+
+        log.info("ContentGeneratorAgent 开始执行 [{}]: mainTitle={}", mode, ctx.templateVars().get("{mainTitle}"));
+
+        Consumer<String> streamHandler = StreamHandlerContext.get();
+        String content = callLlmWithStreaming(template, streamHandler);
+
+        log.info("ContentGeneratorAgent 执行完成: 正文长度={}, mode={}", content.length(), mode);
+
+        // 注：返回 String（Markdown 正文），下游用 Object::toString 兼容
+        return Map.of(OUTPUT_CONTENT, content);
+    }
+
+    private String buildRevisePrompt(ArticleContext ctx, String feedback, String source) {
+        Map<String, String> vars = new LinkedHashMap<>(ctx.templateVars());
+        // 两个修订 prompt 都用 {contentFeedback} / {critiqueFeedback} 之一
+        if ("EDITOR".equals(source)) {
+            vars.put("{contentFeedback}", feedback);
             ArticleContext reviseCtx = new ArticleContext(
                     ctx.taskId(), ctx.topic(), ctx.userDescription(), ctx.style(),
                     ctx.styleFragment(), ctx.enabledImageMethods(),
                     ctx.availableMethodsDescription(), ctx.methodUsageGuide(),
                     ctx.lengthBudget(), vars
             );
-            template = reviseCtx.render(PromptConstant.AGENT3_REVISION_PROMPT);
-            log.info("ContentGeneratorAgent 开始执行 [REVISE #{}]: mainTitle={}, feedback={}",
-                    revisionCount, ctx.templateVars().get("{mainTitle}"), truncate(feedback, 60));
+            return reviseCtx.render(PromptConstant.AGENT3_EDITOR_REVISION_PROMPT);
         } else {
-            template = ctx.render(PromptConstant.AGENT3_CONTENT_PROMPT) + ctx.styleSuffix();
-            log.info("ContentGeneratorAgent 开始执行 [INITIAL]: mainTitle={}", ctx.templateVars().get("{mainTitle}"));
+            vars.put("{critiqueFeedback}", feedback);
+            ArticleContext reviseCtx = new ArticleContext(
+                    ctx.taskId(), ctx.topic(), ctx.userDescription(), ctx.style(),
+                    ctx.styleFragment(), ctx.enabledImageMethods(),
+                    ctx.availableMethodsDescription(), ctx.methodUsageGuide(),
+                    ctx.lengthBudget(), vars
+            );
+            return reviseCtx.render(PromptConstant.AGENT3_REVISION_PROMPT);
         }
-
-        String prompt = template;
-
-        Consumer<String> streamHandler = StreamHandlerContext.get();
-        String content = callLlmWithStreaming(prompt, streamHandler);
-
-        log.info("ContentGeneratorAgent 执行完成: 正文长度={}, revise={}", content.length(), revise);
-
-        // 注：返回 String（Markdown 正文），下游用 Object::toString 兼容
-        return Map.of(OUTPUT_CONTENT, content);
     }
 
     private static String truncate(String s, int max) {

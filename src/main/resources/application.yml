@@ -88,3 +88,6 @@ article:
       threshold: ${ARTICLE_AGENT_CRITIQUE_THRESHOLD:7}
     tool-routing:
       enabled: ${ARTICLE_AGENT_TOOL_ROUTING_ENABLED:true}
+    editor:
+      enabled: ${ARTICLE_AGENT_EDITOR_ENABLED:true}
+      max-iterations: ${ARTICLE_AGENT_EDITOR_MAX_ITERATIONS:2}

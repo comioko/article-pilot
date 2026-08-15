@@ -46,6 +46,23 @@ public class AgentConfig {
     private boolean toolRoutingEnabled;
 
     /**
+     * 是否启用 Editor-in-Chief 主编动态路由（supervisor pattern）
+     * <p>
+     * true: 主编节点审阅完整文章，决策 finish / revise_outline / revise_content / revise_images
+     *      通过 addConditionalEdges 让 StateGraph 走 LLM 控制的动态路径
+     * <p>
+     * false: 跳过主编节点，content_merger 直接到 END（PR 1/2 行为）
+     */
+    @Value("${article.agent.editor.enabled:true}")
+    private boolean editorEnabled;
+
+    /**
+     * 主编最大迭代次数（防 LLM 互搏死循环）
+     */
+    @Value("${article.agent.editor.max-iterations:2}")
+    private int maxEditorIterations;
+
+    /**
      * 提供内存状态保存器（单例）
      * 用于 Agent 对话记忆管理
      */

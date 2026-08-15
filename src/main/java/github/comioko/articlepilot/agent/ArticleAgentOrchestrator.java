@@ -61,6 +61,12 @@ public class ArticleAgentOrchestrator {
     @Resource
     private CritiqueRouting critiqueRouting;
 
+    @Resource
+    private github.comioko.articlepilot.agent.agents.EditorInChiefAgent editorInChiefAgent;
+
+    @Resource
+    private github.comioko.articlepilot.agent.routing.EditorRouting editorRouting;
+
     // region 状态键常量
 
     private static final String KEY_TASK_ID = "taskId";
@@ -83,6 +89,14 @@ public class ArticleAgentOrchestrator {
     private static final String KEY_CRITIQUE_FEEDBACK = "critiqueFeedback";
     private static final String KEY_REVISION_COUNT = "revisionCount";
     private static final String KEY_REVISE = "revise";
+
+    // Editor-in-Chief 控制键
+    private static final String KEY_EDITOR_DECISION = "editorDecision";
+    private static final String KEY_EDITORIAL_NOTE = "editorialNote";
+    private static final String KEY_OUTLINE_FEEDBACK = "outlineFeedback";
+    private static final String KEY_CONTENT_FEEDBACK = "contentFeedback";
+    private static final String KEY_IMAGE_FEEDBACK = "imageFeedback";
+    private static final String KEY_EDITOR_ITERATION = "editorIteration";
 
     // endregion
 
@@ -271,7 +285,25 @@ public class ArticleAgentOrchestrator {
                     state.setFullContent(fullContent);
                     streamHandler.accept(SseMessageTypeEnum.MERGE_COMPLETE.getValue());
                 }
-                
+
+                // 主编决策与编辑笔记
+                String editorDecision = finalState.value(KEY_EDITOR_DECISION).map(Object::toString).orElse("finish");
+                String editorialNote = finalState.value(KEY_EDITORIAL_NOTE).map(Object::toString).orElse(null);
+                int editorIteration = finalState.value(KEY_EDITOR_ITERATION).map(v -> ((Number) v).intValue()).orElse(0);
+                log.info("阶段3（多智能体编排）：主编决策={}, iteration={}, note={}",
+                        editorDecision, editorIteration,
+                        editorialNote == null ? "(无)" : (editorialNote.length() > 200 ? editorialNote.substring(0, 200) + "..." : editorialNote));
+
+                // 推送 EDITOR_COMPLETE（即使 decision 不是 finish 也推送，让前端知道主编做了什么）
+                if (agentConfig.isEditorEnabled()) {
+                    String editorMsg = SseMessageTypeEnum.EDITOR_COMPLETE.getValue()
+                            + ":" + GsonUtils.toJson(Map.of(
+                                    "decision", editorDecision,
+                                    "note", editorialNote == null ? "" : editorialNote,
+                                    "iteration", editorIteration));
+                    streamHandler.accept(editorMsg);
+                }
+
                 log.info("阶段3（多智能体编排）：正文+配图生成完成, 正文长度={}, 图片数={}",
                         contentWithPlaceholders != null ? contentWithPlaceholders.length() : (content != null ? content.length() : 0),
                         images != null ? images.size() : 0);
@@ -316,38 +348,73 @@ public class ArticleAgentOrchestrator {
     }
 
     /**
-     * 构建阶段3图：正文+配图生成（含 Self-Critique Loop）
-     * <p>
-     * 流程：content_generator ⇄ content_critic (conditional edge) → image_analyzer → parallel_image_generator → content_merger
-     * <p>
-     * conditional edge 规则：critiqueScore &lt; threshold AND revisionCount &lt; maxIterations → revise(回到 content_generator)，
-     * 否则 accept（继续到 image_analyzer）。
+     * 构建阶段3图：正文+配图生成 + Self-Critique Loop + Editor-in-Chief
+     *
+     * <p>流程：
+     * <pre>
+     * START → outline_generator (pass-through / revise)
+     *       → content_generator
+     *       → content_critic ⇄ (Self-Critique conditional edge)
+     *       → image_analyzer
+     *       → parallel_image_generator
+     *       → content_merger
+     *       → editor_in_chief (Editor-in-Chief conditional edge)
+     *       → revise_outline → outline_generator
+     *       → revise_content → content_generator
+     *       → revise_images → image_analyzer
+     *       → finish → END
+     * </pre>
+     *
+     * <p>两个 conditional edge 串联：
+     * <ul>
+     *   <li>content_critic：评分 &lt; 阈值 → revise writer；否则 → image_analyzer</li>
+     *   <li>editor_in_chief：LLM 决策 finish / revise_outline / revise_content / revise_images</li>
+     * </ul>
      */
     private StateGraph buildPhase3Graph() throws GraphStateException {
         KeyStrategyFactory keyStrategyFactory = createKeyStrategyFactory();
 
-        return new StateGraph(keyStrategyFactory)
+        StateGraph graph = new StateGraph(keyStrategyFactory)
                 // 节点定义
+                .addNode("outline_generator", node_async(outlineGeneratorAgent))
                 .addNode("content_generator", node_async(contentGeneratorAgent))
                 .addNode("content_critic", node_async(contentCriticAgent))
                 .addNode("image_analyzer", node_async(imageAnalyzerAgent))
                 .addNode("parallel_image_generator", node_async(parallelImageGenerator))
                 .addNode("content_merger", node_async(contentMergerAgent))
+                .addNode("editor_in_chief", node_async(editorInChiefAgent))
                 // 边定义
-                .addEdge(START, "content_generator")
-                .addEdge("content_generator", "content_critic")
-                // 条件路由：critic 决定 revise / accept
-                .addConditionalEdges(
-                        "content_critic",
-                        AsyncCommandAction.of(AsyncEdgeAction.edge_async(critiqueRouting::route)),
-                        Map.of(
-                                "revise", "content_generator",
-                                "accept", "image_analyzer"
-                        )
+                .addEdge(START, "outline_generator")
+                .addEdge("outline_generator", "content_generator")
+                .addEdge("content_generator", "content_critic");
+
+        // Self-Critique 条件边
+        graph.addConditionalEdges(
+                "content_critic",
+                AsyncCommandAction.of(AsyncEdgeAction.edge_async(critiqueRouting::route)),
+                Map.of(
+                        "revise", "content_generator",
+                        "accept", "image_analyzer"
                 )
-                .addEdge("image_analyzer", "parallel_image_generator")
-                .addEdge("parallel_image_generator", "content_merger")
-                .addEdge("content_merger", END);
+        );
+
+        graph.addEdge("image_analyzer", "parallel_image_generator");
+        graph.addEdge("parallel_image_generator", "content_merger");
+        graph.addEdge("content_merger", "editor_in_chief");
+
+        // Editor-in-Chief 条件边：4 个目标节点
+        graph.addConditionalEdges(
+                "editor_in_chief",
+                AsyncCommandAction.of(AsyncEdgeAction.edge_async(editorRouting::route)),
+                Map.of(
+                        "revise_outline", "outline_generator",
+                        "revise_content", "content_generator",
+                        "revise_images", "image_analyzer",
+                        "finish", END
+                )
+        );
+
+        return graph;
     }
 
     /**
@@ -376,6 +443,13 @@ public class ArticleAgentOrchestrator {
             strategies.put(KEY_CRITIQUE_FEEDBACK, new ReplaceStrategy());
             strategies.put(KEY_REVISION_COUNT, new ReplaceStrategy());
             strategies.put(KEY_REVISE, new ReplaceStrategy());
+            // Editor-in-Chief 控制键
+            strategies.put(KEY_EDITOR_DECISION, new ReplaceStrategy());
+            strategies.put(KEY_EDITORIAL_NOTE, new ReplaceStrategy());
+            strategies.put(KEY_OUTLINE_FEEDBACK, new ReplaceStrategy());
+            strategies.put(KEY_CONTENT_FEEDBACK, new ReplaceStrategy());
+            strategies.put(KEY_IMAGE_FEEDBACK, new ReplaceStrategy());
+            strategies.put(KEY_EDITOR_ITERATION, new ReplaceStrategy());
             return strategies;
         };
     }

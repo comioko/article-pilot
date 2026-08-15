@@ -66,6 +66,11 @@ public enum SseMessageTypeEnum {
     MERGE_COMPLETE("MERGE_COMPLETE", "图文合成完成"),
 
     /**
+     * 主编审阅完成（Editor-in-Chief 决策 finish / revise_*）
+     */
+    EDITOR_COMPLETE("EDITOR_COMPLETE", "主编审阅完成"),
+
+    /**
      * 全部完成
      */
     ALL_COMPLETE("ALL_COMPLETE", "全部完成"),

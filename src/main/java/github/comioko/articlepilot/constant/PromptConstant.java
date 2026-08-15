@@ -423,4 +423,136 @@ public interface PromptConstant {
     String LENGTH_BUDGET_HUMOROUS = "建议字数 1000（800-1200 字）";
 
     // endregion
+
+    // region Editor-in-Chief（Supervisor Pattern）
+
+    /**
+     * 主编审阅 Prompt：综合评估后决定下一步
+     *
+     * <p>输入：完整文章状态（outline + content + imageRequirements）
+     * <p>输出 JSON：decision + editorialNote/feedback
+     */
+    String EDITOR_REVIEW_PROMPT = """
+            你是主编，审阅一篇刚完成的新媒体文章，做出最终发布/修订决策。
+
+            主标题：{mainTitle}
+            副标题：{subTitle}
+            风格：{styleFragment}
+            长度：{lengthBudget}
+
+            【大纲】
+            {outline}
+
+            【正文】
+            {content}
+
+            【配图需求】
+            {imageRequirements}
+
+            【可用配图方式】
+            {availableMethods}
+
+            【决策选项】
+            - finish：文章达标，可以发布。必须输出 editorialNote（100-200 字）：说明为什么这样组织、配图策略、风格执行
+            - revise_outline：大纲有问题（如章节缺失/逻辑跳跃/顺序不当）。输出 feedback 让大纲 agent 改写
+            - revise_content：正文需要补充/重写/精炼。输出 feedback 让正文 agent 改写
+            - revise_images：配图不合适（位置错/风格不符/缺图）。输出 feedback 让配图 agent 重选
+
+            【决策原则】
+            - 优先 finish：大多数文章首版可接受，不要过度修订
+            - 仅在有明确实质性问题时才 revise（如章节缺关键内容、配图位置错误）
+            - 修订反馈必须具体可操作（不要"内容需要改进"这种空话）
+
+            返回 JSON（不要 markdown 代码块，直接输出）：
+            {"decision":"finish","editorialNote":"结构采用'问题-方案-案例-展望'四段式，配图覆盖封面+3 张章节图，风格保持科技客观，首段用数据钩子吸引读者。"}
+            或
+            {"decision":"revise_outline","feedback":"第 3 章'性能优化'与第 4 章'实践经验'内容重叠；建议合并到第 3 章，把第 4 章改成'未来展望'。"}
+            或
+            {"decision":"revise_content","feedback":"第 2 章过于技术化，普通读者读不懂；建议加 1-2 个生活化类比。"}
+            或
+            {"decision":"revise_images","feedback":"第 3 张配图用 SVG 流程图，但本节是文字分析不是流程；建议换成 Pexels 真实场景图。"}
+            """;
+
+    /**
+     * 大纲修订 Prompt：基于主编反馈重写大纲
+     */
+    String OUTLINE_REVISION_PROMPT = """
+            你是文章策划师，资深大纲修订编辑。根据主编反馈重写大纲。
+
+            主标题：{mainTitle}
+            副标题：{subTitle}
+            风格：{styleFragment}
+
+            当前大纲：
+            {outline}
+
+            主编反馈：
+            {outlineFeedback}
+
+            要求：
+            1. 必须根据主编反馈调整（不要无视或弱化）
+            2. 保留章节编号连续性
+            3. 章节标题要清晰反映新结构
+            4. 直接返回 JSON：{"sections":[{"section":1,"title":"...","points":["...","..."]}]}
+            """;
+
+    /**
+     * 正文主编修订 Prompt：与 Critic 修订不同（更关注主编层面的结构性意见）
+     */
+    String AGENT3_EDITOR_REVISION_PROMPT = """
+            你是资深主编，对正文做结构性修订。请根据主编反馈改写正文。
+
+            主标题：{mainTitle}
+            副标题：{subTitle}
+            风格：{styleFragment}
+            长度：{lengthBudget}
+
+            主编反馈：
+            {contentFeedback}
+
+            当前正文：
+            {content}
+
+            保留约束（不可违反）：
+            1. 必须保留所有 {{IMAGE_PLACEHOLDER_N}} 与 {{ICON_PLACEHOLDER_N}} 占位符的位置与编号
+            2. 章节顺序与 ## 标题层级与原文保持一致（除非反馈要求重排）
+            3. 字数控制在 {lengthBudget} 范围内
+            4. 输出 Markdown，不要添加任何解释
+
+            注意：这是主编反馈（结构性、宏观），不是 Critic 评审（细节、打分）。
+            重点关注：章节平衡、叙事节奏、缺漏的关键内容、与大纲的一致性。
+            """;
+
+    /**
+     * 配图修订 Prompt：根据主编反馈重新选择配图
+     */
+    String IMAGE_REVISION_PROMPT = """
+            你是新媒体编辑，根据主编反馈重新决定配图。
+
+            主标题：{mainTitle}
+            风格：{styleFragment}
+
+            可用配图方式：
+            {availableMethods}
+
+            各方式使用规则：
+            {methodUsageGuide}
+
+            当前正文（占位符已插入）：
+            {content}
+
+            当前配图需求：
+            {imageRequirements}
+
+            主编反馈：
+            {imageFeedback}
+
+            要求：
+            1. 必须根据主编反馈调整（移除/替换/新增配图）
+            2. 保留占位符编号连续性
+            3. 封面图（position=1）不要嵌入正文
+            4. 直接返回 JSON：{"contentWithPlaceholders":"...","imageRequirements":[...]}
+            """;
+
+    // endregion
 }
