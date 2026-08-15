@@ -1,6 +1,8 @@
 spring:
   application:
     name: ArticlePilot
+  main:
+    allow-circular-references: true
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:ArticlePilot}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=${DB_SSL:false}
     username: ${DB_USERNAME:root}
@@ -84,3 +86,5 @@ article:
     critique:
       enabled: ${ARTICLE_AGENT_CRITIQUE_ENABLED:true}
       threshold: ${ARTICLE_AGENT_CRITIQUE_THRESHOLD:7}
+    tool-routing:
+      enabled: ${ARTICLE_AGENT_TOOL_ROUTING_ENABLED:true}

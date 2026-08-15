@@ -35,6 +35,17 @@ public class AgentConfig {
     private int critiqueThreshold;
 
     /**
+     * 是否启用 Dynamic Tool Routing（PR 3）。
+     * <p>
+     * true: ImageAnalyzerAgent 让 LLM 通过 ChatClient + defaultToolCallbacks 调用 generateImage 工具
+     *      （演示级：LLM 真的会调工具，但 final-response 的 JSON 格式需要更精细的 prompt）
+     * <p>
+     * false: 沿用 JSON 文本 prompt（PR 1 行为，确保 pipeline 稳定输出 imageRequirements）
+     */
+    @Value("${article.agent.tool-routing.enabled:true}")
+    private boolean toolRoutingEnabled;
+
+    /**
      * 提供内存状态保存器（单例）
      * 用于 Agent 对话记忆管理
      */
