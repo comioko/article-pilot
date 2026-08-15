@@ -17,17 +17,9 @@ import org.springframework.context.annotation.Configuration;
 public class AgentConfig {
 
     /**
-     * 是否启用多智能体编排器
-     * true: 使用新的 Spring AI Alibaba 多智能体编排
-     * false: 使用原有的 ArticleAgentService
+     * Agent 最大迭代次数（Self-Critique 修订上限）
      */
-    @Value("${article.agent.orchestrator.enabled:true}")
-    private boolean orchestratorEnabled;
-
-    /**
-     * Agent 最大迭代次数
-     */
-    @Value("${article.agent.max-iterations:10}")
+    @Value("${article.agent.max-iterations:3}")
     private int maxIterations;
 
     /**

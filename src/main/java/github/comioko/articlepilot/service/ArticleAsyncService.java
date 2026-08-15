@@ -1,6 +1,7 @@
 package github.comioko.articlepilot.service;
 
 import com.google.gson.reflect.TypeToken;
+import github.comioko.articlepilot.agent.ArticleAgentOrchestrator;
 import github.comioko.articlepilot.manager.SseEmitterManager;
 import github.comioko.articlepilot.model.dto.article.ArticleState;
 import github.comioko.articlepilot.model.entity.Article;
@@ -20,6 +21,8 @@ import java.util.Map;
 /**
  * 文章异步任务服务
  *
+ * <p>Phase 1/2/3 的入口——构造 {@link ArticleState} 调起 StateGraph 编排器。
+ *
  * @author comioko
  */
 @Service
@@ -27,7 +30,7 @@ import java.util.Map;
 public class ArticleAsyncService {
 
     @Resource
-    private ArticleAgentService articleAgentService;
+    private ArticleAgentOrchestrator articleAgentOrchestrator;
 
     @Resource
     private SseEmitterManager sseEmitterManager;
@@ -58,7 +61,7 @@ public class ArticleAsyncService {
             state.setStyle(style);
 
             // 执行阶段1：生成标题方案
-            articleAgentService.executePhase1_GenerateTitles(state, message -> {
+            articleAgentOrchestrator.executePhase1_GenerateTitles(state, message -> {
                 handleAgentMessage(taskId, message, state);
             });
 
@@ -117,7 +120,7 @@ public class ArticleAsyncService {
             state.setTitle(title);
 
             // 执行阶段2：生成大纲
-            articleAgentService.executePhase2_GenerateOutline(state, message -> {
+            articleAgentOrchestrator.executePhase2_GenerateOutline(state, message -> {
                 handleAgentMessage(taskId, message, state);
             });
 
@@ -199,7 +202,7 @@ public class ArticleAsyncService {
             state.setOutline(outlineResult);
 
             // 执行阶段3：生成正文+配图
-            articleAgentService.executePhase3_GenerateContent(state, message -> {
+            articleAgentOrchestrator.executePhase3_GenerateContent(state, message -> {
                 handleAgentMessage(taskId, message, state);
             });
 

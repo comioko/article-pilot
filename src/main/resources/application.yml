@@ -80,4 +80,4 @@ article:
   agent:
     orchestrator:
       enabled: ${ARTICLE_AGENT_ENABLED:true}
-    max-iterations: ${ARTICLE_AGENT_MAX_ITERATIONS:10}
+    max-iterations: ${ARTICLE_AGENT_MAX_ITERATIONS:3}

@@ -37,58 +37,71 @@ public class ParallelImageGenerator implements NodeAction {
 
     @Override
     public Map<String, Object> apply(OverAllState state) throws Exception {
-        @SuppressWarnings("unchecked")
-        List<ArticleState.ImageRequirement> imageRequirements = state.value(INPUT_IMAGE_REQUIREMENTS)
-                .map(v -> {
-                    if (v instanceof List) {
-                        List<?> list = (List<?>) v;
-                        if (list.isEmpty()) {
-                            return new ArrayList<ArticleState.ImageRequirement>();
-                        }
-                        if (list.get(0) instanceof ArticleState.ImageRequirement) {
-                            return (List<ArticleState.ImageRequirement>) v;
-                        }
-                        // 尝试转换
-                        return convertToImageRequirements(list);
-                    }
-                    return new ArrayList<ArticleState.ImageRequirement>();
-                })
-                .orElse(new ArrayList<>());
-        
+        List<ArticleState.ImageRequirement> imageRequirements = parseImageRequirements(state.value(INPUT_IMAGE_REQUIREMENTS).orElse(null));
+
         // 从 ThreadLocal 获取流式处理器
         Consumer<String> streamHandler = StreamHandlerContext.get();
-        
+
         log.info("ParallelImageGenerator 开始执行: 配图需求数量={}", imageRequirements.size());
-        
+
         if (imageRequirements.isEmpty()) {
             log.info("没有配图需求，跳过图片生成");
-            return Map.of(OUTPUT_IMAGES, new ArrayList<>());
+            return Map.of(OUTPUT_IMAGES, "[]");
         }
-        
+
         // 按 imageSource 分组
         Map<String, List<ArticleState.ImageRequirement>> groupedBySource = imageRequirements.stream()
                 .collect(Collectors.groupingBy(ArticleState.ImageRequirement::getImageSource));
-        
-        log.info("配图需求按类型分组: {}", 
+
+        log.info("配图需求按类型分组: {}",
                 groupedBySource.entrySet().stream()
                         .collect(Collectors.toMap(
                                 Map.Entry::getKey,
                                 e -> e.getValue().size()
                         )));
-        
+
         // 并行执行不同类型的图片生成
         List<ArticleState.ImageResult> allImages = executeParallel(groupedBySource, streamHandler);
-        
+
         // 按 position 排序
         allImages.sort((a, b) -> {
             Integer posA = a.getPosition() != null ? a.getPosition() : 0;
             Integer posB = b.getPosition() != null ? b.getPosition() : 0;
             return posA.compareTo(posB);
         });
-        
+
         log.info("ParallelImageGenerator 执行完成: 成功生成 {} 张图片", allImages.size());
-        
-        return Map.of(OUTPUT_IMAGES, allImages);
+
+        // 返回 JSON 字符串：跨 StateGraph 节点传递时类型稳定性更好
+        return Map.of(OUTPUT_IMAGES, GsonUtils.toJson(allImages));
+    }
+
+    /**
+     * 解析 imageRequirements 输入：兼容 List 类型对象、JSON 字符串、null/空。
+     */
+    private List<ArticleState.ImageRequirement> parseImageRequirements(Object raw) {
+        if (raw == null) return new ArrayList<>();
+        if (raw instanceof List<?> list) {
+            if (list.isEmpty()) return new ArrayList<>();
+            if (list.get(0) instanceof ArticleState.ImageRequirement) {
+                return (List<ArticleState.ImageRequirement>) list;
+            }
+            return convertToImageRequirements(list);
+        }
+        // 按 JSON 字符串解析
+        try {
+            String json = raw.toString();
+            if (json.isBlank()) return new ArrayList<>();
+            List<ArticleState.ImageRequirement> parsed = GsonUtils.fromJson(
+                    json,
+                    new com.google.gson.reflect.TypeToken<List<ArticleState.ImageRequirement>>() {
+                    }
+            );
+            return parsed != null ? parsed : new ArrayList<>();
+        } catch (Exception e) {
+            log.warn("imageRequirements JSON 解析失败, raw={}", raw, e);
+            return new ArrayList<>();
+        }
     }
 
     /**

@@ -9,14 +9,12 @@ import github.comioko.articlepilot.agent.context.StreamHandlerContext;
 import github.comioko.articlepilot.agent.parallel.ParallelImageGenerator;
 import github.comioko.articlepilot.model.dto.article.ArticleState;
 import github.comioko.articlepilot.model.enums.SseMessageTypeEnum;
+import github.comioko.articlepilot.utils.GsonUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -149,17 +147,22 @@ public class ArticleAgentOrchestrator {
             
             if (result.isPresent()) {
                 OverAllState finalState = result.get();
-                
-                ArticleState.OutlineResult outline = finalState.value(KEY_OUTLINE)
-                        .map(v -> {
-                            if (v instanceof ArticleState.OutlineResult) {
-                                return (ArticleState.OutlineResult) v;
-                            }
-                            return null;
-                        })
+
+                // OutlineGeneratorAgent 返回的是 JSON 字符串（StateGraph 跨节点时类型不一定保留）
+                String outlineJson = finalState.value(KEY_OUTLINE)
+                        .map(Object::toString)
                         .orElse(null);
-                
-                if (outline != null) {
+
+                ArticleState.OutlineResult outline = null;
+                if (outlineJson != null && !outlineJson.isBlank()) {
+                    try {
+                        outline = GsonUtils.fromJson(outlineJson, ArticleState.OutlineResult.class);
+                    } catch (Exception e) {
+                        log.error("大纲 JSON 解析失败, raw={}", outlineJson, e);
+                    }
+                }
+
+                if (outline != null && outline.getSections() != null) {
                     state.setOutline(outline);
                     streamHandler.accept(SseMessageTypeEnum.AGENT2_COMPLETE.getValue());
                     log.info("阶段2（多智能体编排）：大纲生成完成, 章节数={}", outline.getSections().size());
@@ -220,17 +223,11 @@ public class ArticleAgentOrchestrator {
                         .map(Object::toString)
                         .orElse(null);
                 
-                // 提取配图需求
-                @SuppressWarnings("unchecked")
-                List<ArticleState.ImageRequirement> imageRequirements = finalState.value(KEY_IMAGE_REQUIREMENTS)
-                        .map(v -> (List<ArticleState.ImageRequirement>) v)
-                        .orElse(null);
-                
-                // 提取图片结果
-                @SuppressWarnings("unchecked")
-                List<ArticleState.ImageResult> images = finalState.value(KEY_IMAGES)
-                        .map(v -> (List<ArticleState.ImageResult>) v)
-                        .orElse(null);
+                // 提取配图需求（ImageAnalyzerAgent 返回 JSON 字符串，避免跨节点类型丢失）
+                List<ArticleState.ImageRequirement> imageRequirements = parseImageRequirements(finalState.value(KEY_IMAGE_REQUIREMENTS).orElse(null));
+
+                // 提取图片结果（ParallelImageGenerator 返回 JSON 字符串）
+                List<ArticleState.ImageResult> images = parseImageResults(finalState.value(KEY_IMAGES).orElse(null));
                 
                 // 提取完整内容
                 String fullContent = finalState.value(KEY_FULL_CONTENT)
@@ -304,12 +301,13 @@ public class ArticleAgentOrchestrator {
     }
 
     /**
-     * 构建阶段3图：正文+配图生成（顺序执行）
-     * 流程：正文生成 -> 配图需求分析 -> 并行配图生成 -> 图文合成
+     * 构建阶段3图：正文+配图生成
+     * <p>
+     * 流程：content_generator → image_analyzer → parallel_image_generator → content_merger
      */
     private StateGraph buildPhase3Graph() throws GraphStateException {
         KeyStrategyFactory keyStrategyFactory = createKeyStrategyFactory();
-        
+
         return new StateGraph(keyStrategyFactory)
                 // 节点定义
                 .addNode("content_generator", node_async(contentGeneratorAgent))
@@ -326,7 +324,7 @@ public class ArticleAgentOrchestrator {
 
     /**
      * 创建状态键策略工厂
-     * 所有键都使用替换策略
+     * 所有键都使用替换策略(旧数据被新数据覆盖)
      */
     private KeyStrategyFactory createKeyStrategyFactory() {
         return () -> {
@@ -347,6 +345,87 @@ public class ArticleAgentOrchestrator {
             strategies.put(KEY_ENABLED_IMAGE_METHODS, new ReplaceStrategy());
             return strategies;
         };
+    }
+
+    // endregion
+
+    // region 跨节点结果解析（处理 StateGraph 序列化/反序列化导致的类型丢失）
+
+    /**
+     * 解析 imageRequirements：兼容 List 对象、JSON 字符串、null/空。
+     */
+    private List<ArticleState.ImageRequirement> parseImageRequirements(Object raw) {
+        if (raw == null) return new ArrayList<>();
+        if (raw instanceof List<?> list) {
+            if (list.isEmpty()) return new ArrayList<>();
+            if (list.get(0) instanceof ArticleState.ImageRequirement) {
+                return (List<ArticleState.ImageRequirement>) list;
+            }
+            // 试图从 Map 列表反序列化
+            try {
+                String json = GsonUtils.toJson(raw);
+                List<ArticleState.ImageRequirement> parsed = GsonUtils.fromJson(
+                        json,
+                        new com.google.gson.reflect.TypeToken<List<ArticleState.ImageRequirement>>() {
+                        }
+                );
+                return parsed != null ? parsed : new ArrayList<>();
+            } catch (Exception e) {
+                log.warn("imageRequirements 解析失败, raw={}", raw, e);
+                return new ArrayList<>();
+            }
+        }
+        try {
+            String json = raw.toString();
+            if (json.isBlank()) return new ArrayList<>();
+            List<ArticleState.ImageRequirement> parsed = GsonUtils.fromJson(
+                    json,
+                    new com.google.gson.reflect.TypeToken<List<ArticleState.ImageRequirement>>() {
+                    }
+            );
+            return parsed != null ? parsed : new ArrayList<>();
+        } catch (Exception e) {
+            log.warn("imageRequirements JSON 解析失败, raw={}", raw, e);
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * 解析 imageResults：兼容 List 对象、JSON 字符串、null/空。
+     */
+    private List<ArticleState.ImageResult> parseImageResults(Object raw) {
+        if (raw == null) return new ArrayList<>();
+        if (raw instanceof List<?> list) {
+            if (list.isEmpty()) return new ArrayList<>();
+            if (list.get(0) instanceof ArticleState.ImageResult) {
+                return (List<ArticleState.ImageResult>) list;
+            }
+            try {
+                String json = GsonUtils.toJson(raw);
+                List<ArticleState.ImageResult> parsed = GsonUtils.fromJson(
+                        json,
+                        new com.google.gson.reflect.TypeToken<List<ArticleState.ImageResult>>() {
+                        }
+                );
+                return parsed != null ? parsed : new ArrayList<>();
+            } catch (Exception e) {
+                log.warn("imageResults 解析失败, raw={}", raw, e);
+                return new ArrayList<>();
+            }
+        }
+        try {
+            String json = raw.toString();
+            if (json.isBlank()) return new ArrayList<>();
+            List<ArticleState.ImageResult> parsed = GsonUtils.fromJson(
+                    json,
+                    new com.google.gson.reflect.TypeToken<List<ArticleState.ImageResult>>() {
+                    }
+            );
+            return parsed != null ? parsed : new ArrayList<>();
+        } catch (Exception e) {
+            log.warn("imageResults JSON 解析失败, raw={}", raw, e);
+            return new ArrayList<>();
+        }
     }
 
     // endregion

@@ -3,10 +3,11 @@ package github.comioko.articlepilot.agent.agents;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import github.comioko.articlepilot.agent.context.ArticleContext;
+import github.comioko.articlepilot.agent.context.ArticleContextFactory;
 import github.comioko.articlepilot.agent.context.StreamHandlerContext;
 import github.comioko.articlepilot.constant.PromptConstant;
 import github.comioko.articlepilot.model.dto.article.ArticleState;
-import github.comioko.articlepilot.model.enums.ArticleStyleEnum;
 import github.comioko.articlepilot.model.enums.SseMessageTypeEnum;
 import github.comioko.articlepilot.utils.GsonUtils;
 import lombok.RequiredArgsConstructor;
@@ -32,63 +33,33 @@ import java.util.function.Consumer;
 public class OutlineGeneratorAgent implements NodeAction {
 
     private final DashScopeChatModel chatModel;
+    private final ArticleContextFactory contextFactory;
 
-    public static final String INPUT_MAIN_TITLE = "mainTitle";
-    public static final String INPUT_SUB_TITLE = "subTitle";
-    public static final String INPUT_USER_DESCRIPTION = "userDescription";
-    public static final String INPUT_STYLE = "style";
     public static final String OUTPUT_OUTLINE = "outline";
 
     @Override
     public Map<String, Object> apply(OverAllState state) throws Exception {
-        String mainTitle = state.value(INPUT_MAIN_TITLE)
-                .map(Object::toString)
-                .orElseThrow(() -> new IllegalArgumentException("缺少主标题参数"));
-        
-        String subTitle = state.value(INPUT_SUB_TITLE)
-                .map(Object::toString)
-                .orElse("");
-        
-        String userDescription = state.value(INPUT_USER_DESCRIPTION)
-                .map(Object::toString)
-                .orElse(null);
-        
-        String style = state.value(INPUT_STYLE)
-                .map(Object::toString)
-                .orElse(null);
-        
-        log.info("OutlineGeneratorAgent 开始执行: mainTitle={}, subTitle={}", mainTitle, subTitle);
-        
-        // 构建用户描述部分
-        String descriptionSection = "";
-        if (userDescription != null && !userDescription.trim().isEmpty()) {
-            descriptionSection = PromptConstant.AGENT2_DESCRIPTION_SECTION
-                    .replace("{userDescription}", userDescription);
-        }
-        
-        // 构建 prompt
-        String prompt = PromptConstant.AGENT2_OUTLINE_PROMPT
-                .replace("{mainTitle}", mainTitle)
-                .replace("{subTitle}", subTitle)
-                .replace("{descriptionSection}", descriptionSection)
-                + getStylePrompt(style);
-        
-        // 获取流式处理器
+        ArticleContext ctx = contextFactory.fromOverAllState(state);
+
+        log.info("OutlineGeneratorAgent 开始执行: mainTitle={}, subTitle={}",
+                ctx.templateVars().get("{mainTitle}"), ctx.templateVars().get("{subTitle}"));
+
+        String prompt = ctx.render(PromptConstant.AGENT2_OUTLINE_PROMPT) + ctx.styleSuffix();
+
         Consumer<String> streamHandler = StreamHandlerContext.get();
-        
-        // 调用 LLM（流式输出）
         String content = callLlmWithStreaming(prompt, streamHandler);
-        
-        // 解析结果
+
+        // 解析为 OutlineResult 验证合法性，但 StateGraph OverAllState 跨节点读对象时类型可能丢失
+        // （Jackson 序列化/反序列化导致），统一返回 JSON 字符串，由 orchestrator 解析。
         ArticleState.OutlineResult outlineResult = GsonUtils.fromJson(
-                content, 
+                content,
                 ArticleState.OutlineResult.class
         );
-        
-        log.info("OutlineGeneratorAgent 执行完成: 生成了 {} 个章节", 
+        log.info("OutlineGeneratorAgent 执行完成: 生成了 {} 个章节",
                 outlineResult.getSections().size());
-        
-        return Map.of(OUTPUT_OUTLINE, outlineResult);
+
+        // 返回 JSON 字符串：StateGraph 跨节点读写时类型稳定性更好。
+        return Map.of(OUTPUT_OUTLINE, GsonUtils.toJson(outlineResult));
     }
 
     /**
@@ -96,15 +67,14 @@ public class OutlineGeneratorAgent implements NodeAction {
      */
     private String callLlmWithStreaming(String prompt, Consumer<String> streamHandler) {
         StringBuilder contentBuilder = new StringBuilder();
-        
+
         Flux<ChatResponse> streamResponse = chatModel.stream(new Prompt(new UserMessage(prompt)));
-        
+
         streamResponse
                 .doOnNext(response -> {
                     String chunk = response.getResult().getOutput().getText();
                     if (chunk != null && !chunk.isEmpty()) {
                         contentBuilder.append(chunk);
-                        // 带前缀发送流式消息
                         if (streamHandler != null) {
                             streamHandler.accept(SseMessageTypeEnum.AGENT2_STREAMING.getStreamingPrefix() + chunk);
                         }
@@ -112,28 +82,7 @@ public class OutlineGeneratorAgent implements NodeAction {
                 })
                 .doOnError(error -> log.error("OutlineGeneratorAgent 流式调用失败", error))
                 .blockLast();
-        
-        return contentBuilder.toString();
-    }
 
-    /**
-     * 根据风格获取对应的 Prompt 附加内容
-     */
-    private String getStylePrompt(String style) {
-        if (style == null || style.isEmpty()) {
-            return "";
-        }
-        
-        ArticleStyleEnum styleEnum = ArticleStyleEnum.getEnumByValue(style);
-        if (styleEnum == null) {
-            return "";
-        }
-        
-        return switch (styleEnum) {
-            case TECH -> PromptConstant.STYLE_TECH_PROMPT;
-            case EMOTIONAL -> PromptConstant.STYLE_EMOTIONAL_PROMPT;
-            case EDUCATIONAL -> PromptConstant.STYLE_EDUCATIONAL_PROMPT;
-            case HUMOROUS -> PromptConstant.STYLE_HUMOROUS_PROMPT;
-        };
+        return contentBuilder.toString();
     }
 }

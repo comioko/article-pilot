@@ -33,33 +33,56 @@ public class ContentMergerAgent implements NodeAction {
         String content = state.value(INPUT_CONTENT)
                 .map(Object::toString)
                 .orElseThrow(() -> new IllegalArgumentException("缺少正文内容参数"));
-        
-        @SuppressWarnings("unchecked")
+
         List<ArticleState.ImageResult> images = state.value(INPUT_IMAGES)
-                .map(v -> {
-                    if (v instanceof List) {
-                        List<?> list = (List<?>) v;
-                        if (list.isEmpty()) {
-                            return new ArrayList<ArticleState.ImageResult>();
-                        }
-                        // 检查列表元素类型
-                        if (list.get(0) instanceof ArticleState.ImageResult) {
-                            return (List<ArticleState.ImageResult>) v;
-                        }
-                        // 尝试转换
-                        return convertToImageResults(list);
-                    }
-                    return new ArrayList<ArticleState.ImageResult>();
-                })
+                .map(this::parseImagesFromState)
                 .orElse(new ArrayList<>());
-        
+
         log.info("ContentMergerAgent 开始执行: 正文长度={}, 图片数量={}", content.length(), images.size());
-        
+
         String fullContent = mergeImagesIntoContent(content, images);
-        
+
         log.info("ContentMergerAgent 执行完成: 完整内容长度={}", fullContent.length());
-        
+
         return Map.of(OUTPUT_FULL_CONTENT, fullContent);
+    }
+
+    /**
+     * 从 state value 解析图片列表
+     * 兼容 List 对象、JSON 字符串、null/空 等场景
+     */
+    private List<ArticleState.ImageResult> parseImagesFromState(Object v) {
+        if (v == null) {
+            return new ArrayList<>();
+        }
+        if (v instanceof List) {
+            List<?> list = (List<?>) v;
+            if (list.isEmpty()) {
+                return new ArrayList<>();
+            }
+            if (list.get(0) instanceof ArticleState.ImageResult) {
+                @SuppressWarnings("unchecked")
+                List<ArticleState.ImageResult> typed = (List<ArticleState.ImageResult>) list;
+                return typed;
+            }
+            return convertToImageResults(list);
+        }
+        // 兼容跨节点传递时被序列化为 JSON 字符串的情况
+        try {
+            String json = v.toString();
+            if (json.isBlank() || "null".equalsIgnoreCase(json) || "[]".equals(json.trim())) {
+                return new ArrayList<>();
+            }
+            List<ArticleState.ImageResult> parsed = GsonUtils.fromJson(
+                    json,
+                    new com.google.gson.reflect.TypeToken<List<ArticleState.ImageResult>>() {
+                    }
+            );
+            return parsed != null ? parsed : new ArrayList<>();
+        } catch (Exception e) {
+            log.warn("images 解析失败, raw={}", v, e);
+            return new ArrayList<>();
+        }
     }
 
     /**
