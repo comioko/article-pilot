@@ -100,6 +100,7 @@ public class ArticleContextFactory {
 
         // 大纲：尝试转换回 OutlineResult
         Object outlineObj = state.value("outline").orElse(null);
+        //判断 outlineObj 是否是 ArticleState.OutlineResult 类型；如果是，就自动把它转换成 ArticleState.OutlineResult，并赋值给变量 o。
         if (outlineObj instanceof ArticleState.OutlineResult o) {
             pojo.setOutline(o);
         } else if (outlineObj != null) {

@@ -10,6 +10,7 @@ import github.comioko.articlepilot.agent.config.AgentConfig;
 import github.comioko.articlepilot.agent.context.StreamHandlerContext;
 import github.comioko.articlepilot.agent.parallel.ParallelImageGenerator;
 import github.comioko.articlepilot.agent.routing.CritiqueRouting;
+import github.comioko.articlepilot.agent.routing.EditorRouting;
 import github.comioko.articlepilot.model.dto.article.ArticleState;
 import github.comioko.articlepilot.model.enums.SseMessageTypeEnum;
 import github.comioko.articlepilot.utils.GsonUtils;
@@ -62,10 +63,10 @@ public class ArticleAgentOrchestrator {
     private CritiqueRouting critiqueRouting;
 
     @Resource
-    private github.comioko.articlepilot.agent.agents.EditorInChiefAgent editorInChiefAgent;
+    private EditorInChiefAgent editorInChiefAgent;
 
     @Resource
-    private github.comioko.articlepilot.agent.routing.EditorRouting editorRouting;
+    private EditorRouting editorRouting;
 
     // region 状态键常量
 

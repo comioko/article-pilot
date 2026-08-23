@@ -6,7 +6,6 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import github.comioko.articlepilot.agent.context.ArticleContext;
 import github.comioko.articlepilot.agent.context.ArticleContextFactory;
 import github.comioko.articlepilot.constant.PromptConstant;
-import github.comioko.articlepilot.model.dto.article.ArticleState;
 import github.comioko.articlepilot.utils.GsonUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -115,6 +114,7 @@ public class EditorInChiefAgent implements NodeAction {
         return response.getResult().getOutput().getText();
     }
 
+    //把一段原始字符串 raw 解析成 EditorDecision 对象。
     private EditorDecision parseDecision(String raw) {
         if (raw == null || raw.isBlank()) return null;
         String cleaned = stripMarkdownFence(raw);
@@ -126,6 +126,7 @@ public class EditorInChiefAgent implements NodeAction {
         }
     }
 
+    //去掉 Markdown 代码块外壳，只保留里面的内容。
     private static String stripMarkdownFence(String content) {
         if (content == null) return "";
         String trimmed = content.trim();
