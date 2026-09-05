@@ -107,6 +107,42 @@
             </a-form>
           </a-tab-pane>
 
+          <!-- 品牌知识库 -->
+          <a-tab-pane key="brand" tab="品牌知识库">
+            <div class="brand-intro">
+              保存长期写作偏好。它会自动用于后续的标题、大纲和正文生成，本次创作中的额外要求优先。
+            </div>
+            <a-form
+              :model="brandForm"
+              :label-col="{ span: 5 }"
+              :wrapper-col="{ span: 15 }"
+              class="settings-form"
+              @finish="handleSaveBrandProfile"
+            >
+              <a-form-item label="品牌 / 账号">
+                <a-input v-model:value="brandForm.brandName" :maxlength="100" placeholder="例如：ArticlePilot 内容实验室" />
+              </a-form-item>
+              <a-form-item label="写作语气">
+                <a-input v-model:value="brandForm.tone" :maxlength="200" placeholder="例如：专业、克制、带一点温度" />
+              </a-form-item>
+              <a-form-item label="目标读者">
+                <a-input v-model:value="brandForm.targetAudience" :maxlength="300" placeholder="例如：关注 AI 效率工具的职场创作者" />
+              </a-form-item>
+              <a-form-item label="优先表达">
+                <a-textarea v-model:value="brandForm.preferredTerms" :rows="3" :maxlength="1000" show-count placeholder="常用术语、固定表达、希望强调的观点；用逗号或换行分隔" />
+              </a-form-item>
+              <a-form-item label="避免使用">
+                <a-textarea v-model:value="brandForm.bannedTerms" :rows="3" :maxlength="1000" show-count placeholder="禁用词、避免的语气或不希望出现的表述" />
+              </a-form-item>
+              <a-form-item label="参考说明">
+                <a-textarea v-model:value="brandForm.referenceNotes" :rows="5" :maxlength="4000" show-count placeholder="可写入品牌背景、表达原则、事实边界或优秀文章的共性" />
+              </a-form-item>
+              <a-form-item :wrapper-col="{ offset: 5, span: 15 }">
+                <a-button type="primary" html-type="submit" :loading="brandSaving">保存知识库</a-button>
+              </a-form-item>
+            </a-form>
+          </a-tab-pane>
+
           <!-- 修改密码 -->
           <a-tab-pane key="password" tab="修改密码">
             <a-form
@@ -205,6 +241,8 @@ import {
   uploadAvatar,
   changePassword,
   userLogout,
+  getBrandProfile,
+  updateBrandProfile,
 } from '@/api/userController'
 import { isVip } from '@/utils/permission'
 
@@ -315,6 +353,44 @@ const resetProfileForm = () => {
   fillProfileForm()
 }
 
+// ===== 品牌知识库 =====
+const brandSaving = ref(false)
+const brandForm = reactive<API.BrandProfileUpdateRequest>({
+  brandName: '',
+  tone: '',
+  targetAudience: '',
+  preferredTerms: '',
+  bannedTerms: '',
+  referenceNotes: '',
+})
+
+const loadBrandProfile = async () => {
+  try {
+    const res = await getBrandProfile()
+    if (res.data.code === 0 && res.data.data) {
+      Object.assign(brandForm, res.data.data)
+    }
+  } catch (e: any) {
+    message.error('加载品牌知识库失败：' + (e?.message ?? '未知错误'))
+  }
+}
+
+const handleSaveBrandProfile = async () => {
+  brandSaving.value = true
+  try {
+    const res = await updateBrandProfile(brandForm)
+    if (res.data.code === 0) {
+      message.success('品牌知识库已保存，后续创作会自动使用')
+    } else {
+      message.error('保存失败：' + res.data.message)
+    }
+  } catch (e: any) {
+    message.error('保存失败：' + (e?.message ?? '未知错误'))
+  } finally {
+    brandSaving.value = false
+  }
+}
+
 // ===== 修改密码 =====
 const passwordSaving = ref(false)
 const passwordForm = reactive({
@@ -383,6 +459,7 @@ const handleLogout = async () => {
 
 onMounted(() => {
   fillProfileForm()
+  loadBrandProfile()
 })
 </script>
 
@@ -400,6 +477,16 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: 24px;
+}
+
+.brand-intro {
+  margin: 4px 0 22px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: #f6f9f7;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
 }
 
 /* ===== 信息卡 ===== */

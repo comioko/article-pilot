@@ -59,6 +59,30 @@ public class ArticleAgentService {
         return outlineResult.getSections();
     }
 
+    /**
+     * 对用户选中的文章片段进行定向精修。该方法只生成候选文本，不写入数据库。
+     */
+    public String aiRefineContent(String mainTitle, String style, String selectedText, String instruction) {
+        String prompt = PromptConstant.AI_REFINE_CONTENT_PROMPT
+                .replace("{mainTitle}", mainTitle == null ? "未命名文章" : mainTitle)
+                .replace("{style}", style == null || style.isBlank() ? "保持原文风格" : style)
+                .replace("{instruction}", instruction)
+                .replace("{selectedText}", selectedText);
+        return stripMarkdownFence(callLlm(prompt));
+    }
+
+    /**
+     * 将成稿改写为指定内容渠道的可发布版本，不写入原文章。
+     */
+    public String generatePublishPackage(String mainTitle, String content, String channel, String channelGuide) {
+        String prompt = PromptConstant.PUBLISH_PACKAGE_PROMPT
+                .replace("{mainTitle}", mainTitle == null ? "未命名文章" : mainTitle)
+                .replace("{content}", content)
+                .replace("{channel}", channel)
+                .replace("{channelGuide}", channelGuide);
+        return stripMarkdownFence(callLlm(prompt));
+    }
+
     // region helpers（aiModifyOutline 仍依赖）
 
     private String callLlm(String prompt) {

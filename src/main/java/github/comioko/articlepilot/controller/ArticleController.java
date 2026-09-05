@@ -12,6 +12,8 @@ import github.comioko.articlepilot.model.dto.article.*;
 import github.comioko.articlepilot.model.entity.User;
 import github.comioko.articlepilot.model.enums.ArticleStyleEnum;
 import github.comioko.articlepilot.model.vo.AgentExecutionStats;
+import github.comioko.articlepilot.model.vo.ArticleRevisionVO;
+import github.comioko.articlepilot.model.vo.ArticlePublishPackageVO;
 import github.comioko.articlepilot.model.vo.ArticleVO;
 import github.comioko.articlepilot.service.AgentLogService;
 import github.comioko.articlepilot.service.ArticleAsyncService;
@@ -230,6 +232,65 @@ public class ArticleController {
         );
 
         return ResultUtils.success(modifiedOutline);
+    }
+
+    /**
+     * 对用户选中的内容生成精修候选稿。候选稿不会自动保存。
+     */
+    @PostMapping("/ai-refine-content")
+    @Operation(summary = "AI 精修选中内容")
+    public BaseResponse<String> aiRefineContent(@RequestBody ArticleAiRefineRequest request,
+                                                HttpServletRequest httpServletRequest) {
+        ThrowUtils.throwIf(request == null || request.getTaskId() == null || request.getTaskId().trim().isEmpty(),
+                ErrorCode.PARAMS_ERROR, "任务ID不能为空");
+        ThrowUtils.throwIf(request.getSelectedText() == null || request.getSelectedText().trim().isEmpty(),
+                ErrorCode.PARAMS_ERROR, "请先选择要精修的内容");
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        return ResultUtils.success(articleService.aiRefineContent(request, loginUser));
+    }
+
+    /**
+     * 确认精修稿，写入文章并保存可恢复版本。
+     */
+    @PostMapping("/save-revision")
+    @Operation(summary = "保存文章精修版本")
+    public BaseResponse<ArticleVO> saveRevision(@RequestBody ArticleSaveRevisionRequest request,
+                                                HttpServletRequest httpServletRequest) {
+        ThrowUtils.throwIf(request == null || request.getTaskId() == null || request.getTaskId().trim().isEmpty(),
+                ErrorCode.PARAMS_ERROR, "任务ID不能为空");
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        return ResultUtils.success(articleService.saveRevision(request, loginUser));
+    }
+
+    @GetMapping("/revisions/{taskId}")
+    @Operation(summary = "查询文章历史版本")
+    public BaseResponse<List<ArticleRevisionVO>> listRevisions(@PathVariable String taskId,
+                                                                HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        return ResultUtils.success(articleService.listRevisions(taskId, loginUser));
+    }
+
+    @PostMapping("/restore-revision")
+    @Operation(summary = "恢复文章历史版本")
+    public BaseResponse<ArticleVO> restoreRevision(@RequestBody ArticleRestoreRevisionRequest request,
+                                                   HttpServletRequest httpServletRequest) {
+        ThrowUtils.throwIf(request == null || request.getTaskId() == null || request.getRevisionId() == null,
+                ErrorCode.PARAMS_ERROR, "任务ID和版本ID不能为空");
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        return ResultUtils.success(articleService.restoreRevision(request, loginUser));
+    }
+
+    @PostMapping("/publish-package")
+    @Operation(summary = "生成多平台发布稿")
+    public BaseResponse<ArticlePublishPackageVO> generatePublishPackage(
+            @RequestBody ArticlePublishPackageRequest request,
+            HttpServletRequest httpServletRequest) {
+        ThrowUtils.throwIf(request == null || request.getTaskId() == null || request.getTaskId().isBlank(),
+                ErrorCode.PARAMS_ERROR, "任务ID不能为空");
+        ThrowUtils.throwIf(request.getChannel() == null || request.getChannel().isBlank(),
+                ErrorCode.PARAMS_ERROR, "请选择发布渠道");
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        return ResultUtils.success(articleService.generatePublishPackage(request, loginUser));
     }
 
     /**

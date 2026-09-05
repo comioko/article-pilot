@@ -3,12 +3,18 @@ package github.comioko.articlepilot.service;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.service.IService;
 import github.comioko.articlepilot.model.dto.article.ArticleQueryRequest;
+import github.comioko.articlepilot.model.dto.article.ArticleAiRefineRequest;
+import github.comioko.articlepilot.model.dto.article.ArticlePublishPackageRequest;
+import github.comioko.articlepilot.model.dto.article.ArticleSaveRevisionRequest;
+import github.comioko.articlepilot.model.dto.article.ArticleRestoreRevisionRequest;
 import github.comioko.articlepilot.model.dto.article.ArticleState;
 import github.comioko.articlepilot.model.entity.Article;
 import github.comioko.articlepilot.model.entity.User;
 import github.comioko.articlepilot.model.enums.ArticlePhaseEnum;
 import github.comioko.articlepilot.model.enums.ArticleStatusEnum;
 import github.comioko.articlepilot.model.vo.ArticleVO;
+import github.comioko.articlepilot.model.vo.ArticleRevisionVO;
+import github.comioko.articlepilot.model.vo.ArticlePublishPackageVO;
 
 import java.util.List;
 
@@ -139,4 +145,19 @@ public interface ArticleService extends IService<Article> {
      * @return 修改后的大纲
      */
     List<ArticleState.OutlineSection> aiModifyOutline(String taskId, String modifySuggestion, User loginUser);
+
+    /** 为选中的文章内容生成精修候选稿，不会保存原文。 */
+    String aiRefineContent(ArticleAiRefineRequest request, User loginUser);
+
+    /** 确认精修结果并保存文章版本。 */
+    ArticleVO saveRevision(ArticleSaveRevisionRequest request, User loginUser);
+
+    /** 查询可恢复的文章版本，最新版本在前。 */
+    List<ArticleRevisionVO> listRevisions(String taskId, User loginUser);
+
+    /** 恢复某一历史版本，同时备份恢复前的内容。 */
+    ArticleVO restoreRevision(ArticleRestoreRevisionRequest request, User loginUser);
+
+    /** 将文章适配为目标渠道发布稿，不会改动原成稿。 */
+    ArticlePublishPackageVO generatePublishPackage(ArticlePublishPackageRequest request, User loginUser);
 }

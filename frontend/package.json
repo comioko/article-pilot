@@ -12,12 +12,15 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
     "lint": "eslint . --fix",
-    "format": "prettier --write src/"
+    "format": "prettier --write src/",
+    "test:workbench": "node --test tests/workbench.test.mjs",
+    "test:workbench:e2e": "playwright test --config tests/playwright.config.ts"
   },
   "dependencies": {
     "ant-design-vue": "^4.2.6",
     "axios": "^1.11.0",
     "dayjs": "^1.11.13",
+    "dompurify": "^3.4.14",
     "echarts": "^6.0.0",
     "marked": "^17.0.1",
     "pinia": "^3.0.3",
@@ -27,6 +30,7 @@
   },
   "devDependencies": {
     "@ant-design/icons-vue": "^7.0.1",
+    "@playwright/test": "^1.63.0",
     "@tsconfig/node22": "^22.0.2",
     "@types/node": "^22.15.32",
     "@types/sortablejs": "^1.15.9",

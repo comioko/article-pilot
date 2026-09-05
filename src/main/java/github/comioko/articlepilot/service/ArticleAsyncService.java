@@ -38,6 +38,9 @@ public class ArticleAsyncService {
     @Resource
     private ArticleService articleService;
 
+    @Resource
+    private BrandProfileService brandProfileService;
+
     /**
      * 阶段1：异步生成标题方案
      *
@@ -54,11 +57,17 @@ public class ArticleAsyncService {
             articleService.updateArticleStatus(taskId, ArticleStatusEnum.PROCESSING, null);
             articleService.updatePhase(taskId, ArticlePhaseEnum.TITLE_GENERATING);
 
+            Article article = articleService.getByTaskId(taskId);
+            if (article == null) {
+                throw new RuntimeException("文章不存在");
+            }
+
             // 创建状态对象
             ArticleState state = new ArticleState();
             state.setTaskId(taskId);
             state.setTopic(topic);
             state.setStyle(style);
+            state.setUserDescription(brandProfileService.buildPromptContext(article.getUserId()));
 
             // 执行阶段1：生成标题方案
             articleAgentOrchestrator.executePhase1_GenerateTitles(state, message -> {
@@ -111,7 +120,8 @@ public class ArticleAsyncService {
             ArticleState state = new ArticleState();
             state.setTaskId(taskId);
             state.setStyle(article.getStyle());
-            state.setUserDescription(article.getUserDescription());
+            state.setUserDescription(mergeInstructions(
+                    article.getUserDescription(), brandProfileService.buildPromptContext(article.getUserId())));
 
             // 设置标题
             ArticleState.TitleResult title = new ArticleState.TitleResult();
@@ -172,6 +182,7 @@ public class ArticleAsyncService {
             ArticleState state = new ArticleState();
             state.setTaskId(taskId);
             state.setStyle(article.getStyle());
+            state.setUserDescription(brandProfileService.buildPromptContext(article.getUserId()));
 
             // 从数据库获取允许的配图方式
             List<String> enabledMethods = null;
@@ -241,6 +252,16 @@ public class ArticleAsyncService {
         if (data != null) {
             sseEmitterManager.send(taskId, GsonUtils.toJson(data));
         }
+    }
+
+    private String mergeInstructions(String userDescription, String brandContext) {
+        if (userDescription == null || userDescription.isBlank()) {
+            return brandContext;
+        }
+        if (brandContext == null || brandContext.isBlank()) {
+            return "用户本次补充要求：" + userDescription;
+        }
+        return "用户本次补充要求：" + userDescription + "\n" + brandContext;
     }
 
     /**

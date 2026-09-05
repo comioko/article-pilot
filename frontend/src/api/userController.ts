@@ -166,3 +166,24 @@ export async function changePassword(
     ...(options || {}),
   })
 }
+
+/** 获取品牌知识库 GET /user/brand-profile */
+export async function getBrandProfile(options?: { [key: string]: any }) {
+  return request<API.BaseResponseBrandProfileVO>('/user/brand-profile', {
+    method: 'GET',
+    ...(options || {}),
+  })
+}
+
+/** 保存品牌知识库 PUT /user/brand-profile */
+export async function updateBrandProfile(
+  body: API.BrandProfileUpdateRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseBrandProfileVO>('/user/brand-profile', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    data: body,
+    ...(options || {}),
+  })
+}

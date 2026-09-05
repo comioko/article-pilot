@@ -5,6 +5,9 @@
       <span>文章创作完成！</span>
     </div>
 
+    <div v-if="article.taskId" style="margin: 8px 0 24px">
+      <a-button type="primary" @click="$router.push(`/article/${article.taskId}/workbench`)">进入创作工作台</a-button>
+    </div>
     <div class="preview-header">
       <h1 class="article-title">{{ article.mainTitle }}</h1>
       <p class="article-subtitle">{{ article.subTitle }}</p>

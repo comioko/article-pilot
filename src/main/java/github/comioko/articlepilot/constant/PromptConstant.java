@@ -15,6 +15,7 @@ public interface PromptConstant {
             
             根据以下选题,生成 3-5 个爆款文章标题方案:
             选题：{topic}
+            {userDescription}
             
             要求:
             1. 每个方案包含主标题和副标题
@@ -124,6 +125,7 @@ public interface PromptConstant {
             副标题：{subTitle}
             大纲：
             {outline}
+            {userDescription}
             
             要求:
             1. 内容要充实,每个章节300-400字
@@ -295,6 +297,44 @@ public interface PromptConstant {
                 }
               ]
             }
+            """;
+
+    /**
+     * 段落级精修 Prompt。输出须可直接替换选中原文。
+     */
+    String AI_REFINE_CONTENT_PROMPT = """
+            你是一位经验丰富的新媒体主编。请只精修用户选中的这段文章，不要改动其余内容。
+
+            文章标题：{mainTitle}
+            文章风格：{style}
+            用户要求：{instruction}
+
+            选中文本：
+            {selectedText}
+
+            输出规则：
+            1. 只返回可直接替换原文的 Markdown 文本，不要解释、标题、前后缀或代码块。
+            2. 保持原意、事实边界和 Markdown 结构；除非用户明确要求，不要编造数据、引用或案例。
+            3. 若选中内容包含图片 Markdown、链接或占位符，必须原样保留。
+            """;
+
+    /**
+     * 将已有成稿适配到内容平台，输出须能直接复制发布。
+     */
+    String PUBLISH_PACKAGE_PROMPT = """
+            你是一位熟悉中文内容平台分发的资深编辑。请把下面已有文章改写为可直接发布到「{channel}」的版本。
+
+            原文标题：{mainTitle}
+            原文内容：
+            {content}
+
+            渠道规范：
+            {channelGuide}
+
+            通用规则：
+            1. 保持原文的事实边界、核心观点和语气，不要杜撰数据、经历或引用。
+            2. 删除任何“改写说明”或编辑注释，只输出最终可发布正文。
+            3. 原文中的图片 Markdown、链接和占位符应原样保留；无须补充图片。
             """;
 
     // endregion

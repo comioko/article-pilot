@@ -57,6 +57,35 @@ CREATE TABLE IF NOT EXISTS article
     INDEX idx_userId_status (userId, status)
 ) COMMENT '文章表' COLLATE = utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS article_revision
+(
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT 'id',
+    taskId          VARCHAR(64)                         NOT NULL COMMENT '文章任务ID',
+    userId          BIGINT                              NOT NULL COMMENT '文章所有者ID',
+    revisionNumber  INT                                 NOT NULL COMMENT '版本号',
+    content         TEXT                                NULL COMMENT '正文 Markdown',
+    fullContent     TEXT                                NULL COMMENT '完整图文 Markdown',
+    revisionNote    VARCHAR(500)                        NULL COMMENT '版本说明',
+    createTime      DATETIME DEFAULT CURRENT_TIMESTAMP  NOT NULL COMMENT '创建时间',
+    UNIQUE KEY uk_task_revision (taskId, revisionNumber),
+    INDEX idx_taskId (taskId)
+) COMMENT '文章版本历史' COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS brand_profile
+(
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT 'id',
+    userId          BIGINT                              NOT NULL COMMENT '用户ID',
+    brandName       VARCHAR(100)                        NULL COMMENT '品牌或账号名称',
+    tone            VARCHAR(200)                        NULL COMMENT '写作语气',
+    targetAudience  VARCHAR(300)                        NULL COMMENT '目标读者',
+    preferredTerms  TEXT                                NULL COMMENT '优先术语',
+    bannedTerms     TEXT                                NULL COMMENT '禁用词',
+    referenceNotes  TEXT                                NULL COMMENT '参考说明',
+    createTime      DATETIME DEFAULT CURRENT_TIMESTAMP  NOT NULL COMMENT '创建时间',
+    updateTime      DATETIME DEFAULT CURRENT_TIMESTAMP  NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE KEY uk_userId (userId)
+) COMMENT '用户品牌知识库' COLLATE = utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS agent_log
 (
     id           BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT 'id',

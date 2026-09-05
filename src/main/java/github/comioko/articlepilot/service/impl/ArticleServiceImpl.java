@@ -9,14 +9,23 @@ import github.comioko.articlepilot.exception.BusinessException;
 import github.comioko.articlepilot.exception.ErrorCode;
 import github.comioko.articlepilot.exception.ThrowUtils;
 import github.comioko.articlepilot.mapper.ArticleMapper;
+import github.comioko.articlepilot.mapper.ArticleRevisionMapper;
+import github.comioko.articlepilot.model.dto.article.ArticleAiRefineRequest;
 import github.comioko.articlepilot.model.dto.article.ArticleQueryRequest;
+import github.comioko.articlepilot.model.dto.article.ArticlePublishPackageRequest;
+import github.comioko.articlepilot.model.dto.article.ArticleRestoreRevisionRequest;
+import github.comioko.articlepilot.model.dto.article.ArticleSaveRevisionRequest;
 import github.comioko.articlepilot.model.dto.article.ArticleState;
 import github.comioko.articlepilot.model.entity.Article;
+import github.comioko.articlepilot.model.entity.ArticleRevision;
 import github.comioko.articlepilot.model.entity.User;
 import github.comioko.articlepilot.model.enums.ArticlePhaseEnum;
 import github.comioko.articlepilot.model.enums.ArticleStatusEnum;
 import github.comioko.articlepilot.model.enums.ImageMethodEnum;
+import github.comioko.articlepilot.model.enums.PublishChannelEnum;
 import github.comioko.articlepilot.model.vo.ArticleVO;
+import github.comioko.articlepilot.model.vo.ArticleRevisionVO;
+import github.comioko.articlepilot.model.vo.ArticlePublishPackageVO;
 import github.comioko.articlepilot.service.ArticleAgentService;
 import github.comioko.articlepilot.service.ArticleService;
 import github.comioko.articlepilot.service.QuotaService;
@@ -27,6 +36,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -47,6 +57,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     @Resource
     private ArticleAgentService articleAgentService;
+
+    @Resource
+    private ArticleRevisionMapper articleRevisionMapper;
 
     @Override
     public String createArticleTask(String topic, String style, List<String> enabledImageMethods, User loginUser) {
@@ -333,6 +346,150 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         log.info("AI修改大纲完成, taskId={}, sectionsCount={}", taskId, modifiedOutline.size());
         return modifiedOutline;
+    }
+
+    @Override
+    public String aiRefineContent(ArticleAiRefineRequest request, User loginUser) {
+        Article article = requireEditableArticle(request.getTaskId(), loginUser);
+        ThrowUtils.throwIf(isBlank(request.getSelectedText()), ErrorCode.PARAMS_ERROR, "请选择要精修的内容");
+        String selectedText = request.getSelectedText();
+        ThrowUtils.throwIf(selectedText.length() > 8000, ErrorCode.PARAMS_ERROR, "单次精修内容不能超过 8000 字符");
+
+        String instruction = request.getInstruction() == null ? "" : request.getInstruction().trim();
+        ThrowUtils.throwIf(instruction.isEmpty() || instruction.length() > 1000, ErrorCode.PARAMS_ERROR, "精修要求需为 1-1000 字符");
+
+        return articleAgentService.aiRefineContent(
+                article.getMainTitle(), article.getStyle(), selectedText, instruction);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ArticleVO saveRevision(ArticleSaveRevisionRequest request, User loginUser) {
+        Article article = getMapper().selectForEditing(request.getTaskId());
+        validateEditableArticle(article, loginUser);
+        if (request.getBaseFingerprint() != null) {
+            ThrowUtils.throwIf(!request.getBaseFingerprint().equals(
+                    github.comioko.articlepilot.utils.ArticleFingerprint.of(article)),
+                    ErrorCode.OPERATION_ERROR, "文章已在其他页面修改，请保留草稿并重新加载后再保存");
+        }
+        ThrowUtils.throwIf(isBlank(request.getContent()) && isBlank(request.getFullContent()),
+                ErrorCode.PARAMS_ERROR, "文章内容不能为空");
+
+        ThrowUtils.throwIf(request.getRevisionNote() != null && request.getRevisionNote().length() > 500,
+                ErrorCode.PARAMS_ERROR, "版本说明不能超过 500 字符");
+        validateContentSize(request.getContent());
+        validateContentSize(request.getFullContent());
+        ensureInitialRevision(article);
+        article.setContent(request.getContent() == null ? article.getContent() : request.getContent());
+        article.setFullContent(request.getFullContent() == null ? article.getFullContent() : request.getFullContent());
+        ThrowUtils.throwIf(!this.updateById(article), ErrorCode.OPERATION_ERROR, "保存失败，请重试");
+
+        createRevision(article, isBlank(request.getRevisionNote()) ? "精修后保存" : request.getRevisionNote().trim());
+        log.info("文章精修版本已保存, taskId={}", article.getTaskId());
+        return ArticleVO.objToVo(article);
+    }
+
+    @Override
+    public List<ArticleRevisionVO> listRevisions(String taskId, User loginUser) {
+        Article article = requireEditableArticle(taskId, loginUser);
+        return findRevisions(article.getTaskId()).stream()
+                .sorted(Comparator.comparing(ArticleRevision::getRevisionNumber).reversed())
+                .map(ArticleRevisionVO::objToVo)
+                .toList();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ArticleVO restoreRevision(ArticleRestoreRevisionRequest request, User loginUser) {
+        Article article = getMapper().selectForEditing(request.getTaskId());
+        validateEditableArticle(article, loginUser);
+        if (request.getBaseFingerprint() != null) {
+            ThrowUtils.throwIf(!request.getBaseFingerprint().equals(
+                    github.comioko.articlepilot.utils.ArticleFingerprint.of(article)),
+                    ErrorCode.OPERATION_ERROR, "文章已在其他页面修改，请保留草稿并重新加载后再保存");
+        }
+        ArticleRevision revision = findRevisions(article.getTaskId()).stream()
+                .filter(item -> item.getId().equals(request.getRevisionId()))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_ERROR, "历史版本不存在"));
+
+        createRevision(article, "恢复前自动备份");
+        article.setContent(revision.getContent() == null ? "" : revision.getContent());
+        article.setFullContent(revision.getFullContent() == null ? "" : revision.getFullContent());
+        ThrowUtils.throwIf(!this.updateById(article), ErrorCode.OPERATION_ERROR, "保存失败，请重试");
+
+        createRevision(article, "恢复自版本 " + revision.getRevisionNumber());
+        log.info("文章历史版本已恢复, taskId={}, revision={}", article.getTaskId(), revision.getRevisionNumber());
+        return ArticleVO.objToVo(article);
+    }
+
+    @Override
+    public ArticlePublishPackageVO generatePublishPackage(ArticlePublishPackageRequest request, User loginUser) {
+        Article article = requireEditableArticle(request.getTaskId(), loginUser);
+        PublishChannelEnum channel = PublishChannelEnum.getByValue(request.getChannel());
+        ThrowUtils.throwIf(channel == null, ErrorCode.PARAMS_ERROR, "暂不支持该发布渠道");
+
+        String sourceContent = isBlank(article.getFullContent()) ? article.getContent() : article.getFullContent();
+        String content = articleAgentService.generatePublishPackage(
+                article.getMainTitle(), sourceContent, channel.getText(), getChannelGuide(channel));
+        return new ArticlePublishPackageVO(channel.getValue(), article.getMainTitle(), content);
+    }
+
+    private Article requireEditableArticle(String taskId, User loginUser) {
+        ThrowUtils.throwIf(isBlank(taskId), ErrorCode.PARAMS_ERROR, "任务ID不能为空");
+        Article article = getByTaskId(taskId);
+        validateEditableArticle(article, loginUser);
+        return article;
+    }
+
+    private void validateEditableArticle(Article article, User loginUser) {
+        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "文章不存在");
+        checkArticlePermission(article, loginUser);
+        ThrowUtils.throwIf(!ArticleStatusEnum.COMPLETED.getValue().equals(article.getStatus()),
+                ErrorCode.OPERATION_ERROR, "文章尚未生成完成，暂不能编辑");
+    }
+
+    private void validateContentSize(String content) {
+        ThrowUtils.throwIf(content != null && content.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 65000,
+                ErrorCode.PARAMS_ERROR, "正文过长，请缩短后保存（最多 65000 字节）");
+    }
+
+    private void ensureInitialRevision(Article article) {
+        if (findRevisions(article.getTaskId()).isEmpty()) {
+            createRevision(article, "初始成稿");
+        }
+    }
+
+    private void createRevision(Article article, String note) {
+        int nextRevision = findRevisions(article.getTaskId()).stream()
+                .map(ArticleRevision::getRevisionNumber)
+                .max(Integer::compareTo)
+                .orElse(0) + 1;
+        ArticleRevision revision = ArticleRevision.builder()
+                .taskId(article.getTaskId())
+                .userId(article.getUserId())
+                .revisionNumber(nextRevision)
+                .content(article.getContent())
+                .fullContent(article.getFullContent())
+                .revisionNote(note)
+                .createTime(LocalDateTime.now())
+                .build();
+        articleRevisionMapper.insert(revision);
+    }
+
+    private List<ArticleRevision> findRevisions(String taskId) {
+        return articleRevisionMapper.selectListByQuery(QueryWrapper.create().eq("taskId", taskId));
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private String getChannelGuide(PublishChannelEnum channel) {
+        return switch (channel) {
+            case WECHAT -> "保留 Markdown 标题层级和段落结构；适当拆分过长段落；开头给出一句引言，结尾给出一句自然的互动引导。不要使用过多 emoji 或话题标签。";
+            case XIAOHONGSHU -> "改为高信息密度、短段落、易扫读的笔记体；首行给出有吸引力的标题（20 字以内），多用编号和适量 emoji；结尾附 3-6 个相关话题标签。不要使用 Markdown 标题符号。";
+        };
     }
 
     /**

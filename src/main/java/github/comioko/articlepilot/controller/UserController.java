@@ -13,7 +13,9 @@ import github.comioko.articlepilot.exception.ThrowUtils;
 import github.comioko.articlepilot.model.dto.user.*;
 import github.comioko.articlepilot.model.entity.User;
 import github.comioko.articlepilot.model.vo.LoginUserVO;
+import github.comioko.articlepilot.model.vo.BrandProfileVO;
 import github.comioko.articlepilot.model.vo.UserVO;
+import github.comioko.articlepilot.service.BrandProfileService;
 import github.comioko.articlepilot.service.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,6 +38,9 @@ public class UserController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private BrandProfileService brandProfileService;
 
     /**
      * 用户注册
@@ -221,5 +226,19 @@ public class UserController {
                 request.getOldPassword(),
                 request.getNewPassword());
         return ResultUtils.success(ok);
+    }
+
+    @GetMapping("/brand-profile")
+    public BaseResponse<BrandProfileVO> getBrandProfile(HttpServletRequest httpServletRequest) {
+        User currentUser = userService.getLoginUser(httpServletRequest);
+        return ResultUtils.success(brandProfileService.getProfile(currentUser.getId()));
+    }
+
+    @PutMapping("/brand-profile")
+    public BaseResponse<BrandProfileVO> updateBrandProfile(
+            @RequestBody BrandProfileUpdateRequest request,
+            HttpServletRequest httpServletRequest) {
+        User currentUser = userService.getLoginUser(httpServletRequest);
+        return ResultUtils.success(brandProfileService.updateProfile(currentUser.getId(), request));
     }
 }

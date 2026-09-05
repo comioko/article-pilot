@@ -31,6 +31,71 @@ export async function aiModifyOutline(
   })
 }
 
+/** AI 精修选中内容 POST /article/ai-refine-content */
+export async function aiRefineContent(
+  body: API.ArticleAiRefineRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseString>('/article/ai-refine-content', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** 保存文章精修版本 POST /article/save-revision */
+export async function saveRevision(
+  body: API.ArticleSaveRevisionRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseArticleVO>('/article/save-revision', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** 查询文章历史版本 GET /article/revisions/${param0} */
+export async function listRevisions(
+  params: API.listRevisionsParams,
+  options?: { [key: string]: any }
+) {
+  const { taskId: param0, ...queryParams } = params
+  return request<API.BaseResponseListArticleRevisionVO>(`/article/revisions/${param0}`, {
+    method: 'GET',
+    params: { ...queryParams },
+    ...(options || {}),
+  })
+}
+
+/** 恢复文章历史版本 POST /article/restore-revision */
+export async function restoreRevision(
+  body: API.ArticleRestoreRevisionRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseArticleVO>('/article/restore-revision', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** 生成多平台发布稿 POST /article/publish-package */
+export async function generatePublishPackage(
+  body: API.ArticlePublishPackageRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseArticlePublishPackageVO>('/article/publish-package', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: body,
+    ...(options || {}),
+  })
+}
+
 /** 确认大纲 POST /article/confirm-outline */
 export async function confirmOutline(
   body: API.ArticleConfirmOutlineRequest,

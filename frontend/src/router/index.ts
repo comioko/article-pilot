@@ -24,6 +24,11 @@ const router = createRouter({
       component: () => import('@/pages/article/ArticleListPage.vue'),
     },
     {
+      path: '/article/:taskId/workbench',
+      name: '创作工作台',
+      component: () => import('@/pages/article/ArticleWorkbenchPage.vue'),
+    },
+    {
       path: '/article/:taskId',
       name: '文章详情',
       component: () => import('@/pages/article/ArticleDetailPage.vue'),

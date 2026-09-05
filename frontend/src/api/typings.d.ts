@@ -30,6 +30,31 @@ declare namespace API {
     modifySuggestion?: string
   }
 
+  type ArticleAiRefineRequest = {
+    taskId?: string
+    selectedText?: string
+    instruction?: string
+  }
+
+  type ArticleSaveRevisionRequest = {
+    baseFingerprint?: string
+    taskId?: string
+    content?: string
+    fullContent?: string
+    revisionNote?: string
+  }
+
+  type ArticleRestoreRevisionRequest = {
+    baseFingerprint?: string
+    taskId?: string
+    revisionId?: number
+  }
+
+  type ArticlePublishPackageRequest = {
+    taskId?: string
+    channel?: 'WECHAT' | 'XIAOHONGSHU'
+  }
+
   type ArticleConfirmOutlineRequest = {
     taskId?: string
     outline?: OutlineSection[]
@@ -58,6 +83,7 @@ declare namespace API {
   }
 
   type ArticleVO = {
+    contentFingerprint?: string
     id?: number
     taskId?: string
     userId?: number
@@ -76,6 +102,21 @@ declare namespace API {
     errorMessage?: string
     createTime?: string
     completedTime?: string
+  }
+
+  type ArticleRevisionVO = {
+    id?: number
+    revisionNumber?: number
+    revisionNote?: string
+    content?: string
+    fullContent?: string
+    createTime?: string
+  }
+
+  type ArticlePublishPackageVO = {
+    channel?: string
+    title?: string
+    content?: string
   }
 
   type BaseResponseAgentExecutionStats = {
@@ -99,6 +140,24 @@ declare namespace API {
   type BaseResponseListOutlineSection = {
     code?: number
     data?: OutlineSection[]
+    message?: string
+  }
+
+  type BaseResponseListArticleRevisionVO = {
+    code?: number
+    data?: ArticleRevisionVO[]
+    message?: string
+  }
+
+  type BaseResponseArticlePublishPackageVO = {
+    code?: number
+    data?: ArticlePublishPackageVO
+    message?: string
+  }
+
+  type BaseResponseBrandProfileVO = {
+    code?: number
+    data?: BrandProfileVO
     message?: string
   }
 
@@ -166,11 +225,26 @@ declare namespace API {
     id?: number
   }
 
+  type BrandProfileUpdateRequest = {
+    brandName?: string
+    tone?: string
+    targetAudience?: string
+    preferredTerms?: string
+    bannedTerms?: string
+    referenceNotes?: string
+  }
+
+  type BrandProfileVO = BrandProfileUpdateRequest
+
   type getArticleParams = {
     taskId: string
   }
 
   type getExecutionLogsParams = {
+    taskId: string
+  }
+
+  type listRevisionsParams = {
     taskId: string
   }
 

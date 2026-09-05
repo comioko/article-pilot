@@ -28,3 +28,7 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+
+# Browser verification artifacts
+test-results/
+playwright-report/

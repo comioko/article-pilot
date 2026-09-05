@@ -28,6 +28,8 @@ public class ArticleVO implements Serializable {
      */
     private String taskId;
 
+    private String contentFingerprint;
+
     /**
      * 用户ID
      */
@@ -152,6 +154,7 @@ public class ArticleVO implements Serializable {
         }
         ArticleVO articleVO = new ArticleVO();
         BeanUtils.copyProperties(article, articleVO);
+        articleVO.setContentFingerprint(github.comioko.articlepilot.utils.ArticleFingerprint.of(article));
         
         // 转换 JSON 字段
         if (article.getTitleOptions() != null) {
