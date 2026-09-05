@@ -120,7 +120,7 @@ jobs:
           port: ${{ secrets.DEPLOY_PORT }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: compose.prod.yml,deploy/Caddyfile,deploy/.env.example,deploy/mysql/01-schema.sql,deploy/scripts/cleanup-images.sh
+          source: compose.prod.yml,deploy/Caddyfile,deploy/.env.example,deploy/mysql/01-schema.sql,deploy/scripts/cleanup-images.sh,deploy/scripts/migrate-workbench.sh,sql/add_article_revisions.sql,sql/add_brand_profile.sql
           target: /opt/article-pilot
           overwrite: true
 
@@ -161,6 +161,8 @@ jobs:
             cd /opt/article-pilot
             test -f .env
             IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml pull frontend
+            IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml up -d --wait --wait-timeout 900 mysql
+            IMAGE_TAG="$IMAGE_TAG" bash deploy/scripts/migrate-workbench.sh
             IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml up -d --remove-orphans --wait --wait-timeout 900
             IMAGE_TAG="$IMAGE_TAG" docker compose --env-file .env -f compose.prod.yml ps
             docker image prune -af

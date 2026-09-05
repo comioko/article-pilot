@@ -40,3 +40,9 @@ PLAYWRIGHT_CHANNEL=chrome npm run test:workbench:e2e
 ```
 
 浏览器测试拦截 `/api/` 请求，覆盖编辑、重复选区精修、保存、发布下载、版本恢复、失败保留草稿、离开确认、HTML 清理和手机布局。它不验证真实 DashScope 服务质量或 MySQL 事务执行。真实环境需要后端、MySQL、Redis 和现有 DashScope 配置可用。
+
+## 自动部署迁移
+
+GitHub Actions 会上传两份迁移 SQL 及 `deploy/scripts/migrate-workbench.sh`，等待 MySQL 健康后执行脚本，再启动新版应用。脚本首先在服务器 `backups/` 下生成权限受限的 SQL 备份，再创建缺失的表并检查所需字段。备份、迁移或字段检查失败时会中止后续部署。已经手动建表的数据库可以再次执行；脚本不删除或重建已有表，也不会修复已有表的结构差异。
+
+脚本与当前 SQL 一致，仅支持数据库名 `ArticlePilot`，配置其他库名时会明确停止。每次部署均会留下备份，请按服务器的备份保留策略管理这些文件。
